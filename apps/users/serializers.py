@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from .models import (
-    ModelsUser, ModelsCustomer, ModelsSatus, ModelsAccount
+    ModelsUser, ModelsSatus, ModelsAccount
 )
 
 
@@ -79,9 +79,3 @@ class SerializerRegisterUser(serializers.Serializer):
 
     def validate_password(self, value: str):
         return make_password(value)
-
-    # def create(self, validated_data):
-    #     user = ModelsUser.objects.create(
-    #         **validated_data
-    #     )
-    #     return user

@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'apps.cars.apps.CarsConfig',
     'apps.invoice.apps.InvoiceConfig',
     'apps.task.apps.TaskConfig',
+    'apps.customer.apps.CustomerConfig',
 
     # install
     'rest_framework',
