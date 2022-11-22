@@ -8,7 +8,7 @@ class ModelsCars(models.Model):
     description = models.TextField()
     vin = models.CharField(max_length=55)
     model = models.CharField(max_length=255)
-    image = models.ImageField()
+    image = models.ImageField(blank=True, null=True)
     create_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
