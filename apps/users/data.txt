@@ -32,3 +32,14 @@
 "model": "test_view",
 "image": null
 }
+
+{
+"car_id": 1,
+"description": "test invoice create"
+}
+
+{
+"invoice_id": 1,
+"work": "test create task",
+"payment": "455"
+}
