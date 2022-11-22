@@ -11,7 +11,7 @@ def extract_request_data(request):
 
 
 def create_car(data):
-    print(*data)
+
     try:
         car = models.ModelsCars.objects.create(
             customer_id=data['customer'],
