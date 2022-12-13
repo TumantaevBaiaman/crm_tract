@@ -1,10 +1,19 @@
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from .models import (
     ModelsUser, ModelsSatus, ModelsAccount
 )
+
+
+def serialize_errors(serializer_errors):
+    errors = []
+    for field_name, field_errors in serializer_errors.items():
+        for field_error in field_errors:
+            errors.append(field_error)
+    return errors
 
 
 class SerializerSatus(serializers.ModelSerializer):
@@ -79,3 +88,12 @@ class SerializerRegisterUser(serializers.Serializer):
 
     def validate_password(self, value: str):
         return make_password(value)
+
+
+class SignUpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+    def validate_password(self, value: str) -> str:
+        """Validate whether the password meets all django validator requirements."""
+        validate_password(value)
+        return value

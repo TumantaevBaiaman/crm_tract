@@ -3,10 +3,7 @@ from . import models
 
 
 class SerializerCreateAccount(serializers.ModelSerializer):
-
     class Meta:
         model = models.ModelsAccount
-        fields = (
-            'name',
-            'status'
-        )
+        fields = '__all__'
+

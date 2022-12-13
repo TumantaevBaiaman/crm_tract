@@ -1,50 +1,147 @@
+from rest_framework import status
+from rest_framework.response import Response
+import random
+import string
+
+from apps.account.serializers import SerializerCreateAccount
 from apps.users.models import ModelsUser
 from apps.account.models import ModelsAccount
+from apps.users.serializers import SignUpSerializer, serialize_errors
+from django.conf import settings
+from django.core.mail import send_mail
 
 
-class CreateAccount:
-
-    def __init__(self, data_user, data_account):
-        self.request_data_account = data_account
-        self.request_data_user = data_user
-
-    def create(self):
-
-        account = ModelsAccount.objects.create(
-            name=self.request_data_account['name'],
-            status_id=self.request_data_account['status']
-        )
-
-        user = ModelsUser.objects.create(
-            account_id=account,
-            email=self.request_data_user['email'],
-            status_id=self.request_data_user['status'],
-            password=self.request_data_user['password'],
-            username=self.request_data_user['username'],
-            lastname=self.request_data_user['lastname'],
-            date_of_birth=self.request_data_user['date_of_birth'],
-            phone=self.request_data_user['phone']
-        )
-        return user
+def send_auth_mail(subject, recipient, password):
+    host = settings.EMAIL_HOST_USER
+    email = recipient.email
+    message = f'username: {recipient.email}\npassword: {password}'
+    send_mail(subject, message, host, [email])
 
 
-class CreateUser:
+def generate_password():
+    password_characters = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(random.choice(password_characters) for i in range(8))
+    return password
 
-     def __init__(self, data):
-         self.data = data
 
-     def create(self):
-         account = ModelsAccount.objects.get(id=self.data['account_id'])
-         print(account)
-         user = ModelsUser.objects.create(
-             account_id=account,
-             email=self.data['email'],
-             status_id=self.data['status'],
-             password=self.data['password'],
-             username=self.data['username'],
-             lastname=self.data['lastname'],
-             date_of_birth=self.data['date_of_birth'],
-             phone=self.data['phone']
-         )
-         return user
+def create_profile(user, data):
+    step = 0
+    try:
+        step = int(data['step'])
+    except:
+        pass
+    try:
+        email = data['email']
+    except:
+        return Response({
+            'success': False,
+            'errors': ["Email wasn't entered"]
+        }, status=status.HTTP_400_BAD_REQUEST)
+    if step == 1:
+        if ModelsUser.objects.filter(email=email, is_active=True):
+            return Response({
+                'success': False,
+                'errors': ['User with this email already exists. Try again with new email address.']
+            }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            password = generate_password()
+            data['password'] = password
+            serializer = SignUpSerializer(data=data)
+            if serializer.is_valid():
+                valid_data = serializer.validated_data
+                email, password = valid_data['email'], valid_data['password']
+                user = ModelsUser.objects.create_user(username=email, email=email, password=password)
+            else:
+                return Response({
+                    'success': False,
+                    'errors': serialize_errors(serializer.errors)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        user.is_active = True
+        user.save()
+        send_auth_mail('signup', user, password)
+        return Response({
+            'success': True,
+            'data': {
+                'email': user.email,
+            }
+        }, status=status.HTTP_201_CREATED)
+    elif step == 2:
+        try:
+            user = ModelsUser.objects.get(id=user.id)
+            account = ModelsAccount.objects.get(id=user.account_id_id)
+            print(account)
+        except:
+            return Response({
+                'success': False,
+            }, status=status.HTTP_400_BAD_REQUEST)
 
+        if ModelsUser.objects.filter(email=email, is_active=True):
+            return Response({
+                'success': False,
+                'errors': ['User with this email already exists. Try again with new email address.']
+            }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            password = generate_password()
+            data['password'] = password
+            serializer = SignUpSerializer(data=data)
+            if serializer.is_valid():
+                valid_data = serializer.validated_data
+                email, password = valid_data['email'], valid_data['password']
+                user = ModelsUser.objects.create_user(
+                    username=email, email=email, password=password
+                )
+            else:
+                return Response({
+                    'success': False,
+                    'errors': serialize_errors(serializer.errors)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        user.account_id = account
+        user.is_active = True
+        user.save()
+        send_auth_mail('signup', user, password)
+        return Response({
+            'success': True,
+            'data': {
+                'email': user.email,
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+def create_account(user, data):
+    try:
+        name = data['name']
+    except:
+        return Response({
+            'success': False,
+            'errors': ["name wasn't entered"]
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = ModelsUser.objects.get(id=user.id)
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+    if ModelsAccount.objects.filter(name=name):
+        return Response({
+            'success': False,
+            'errors': ['Account with this name already exists. Try again with new name.']
+        }, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        serializer = SerializerCreateAccount(data=data)
+        if serializer.is_valid():
+            account = ModelsAccount.objects.create(name=name)
+        else:
+            return Response({
+                'success': False,
+                'errors': serialize_errors(serializer.errors)
+            }, status=status.HTTP_400_BAD_REQUEST)
+    account.save()
+    user.account_id = account
+    user.save()
+    return Response({
+        'success': True,
+        'data': {
+            'account': account.name,
+        }
+    }, status=status.HTTP_201_CREATED)
