@@ -4,16 +4,31 @@ from django.utils.translation import gettext as _
 
 class CustomUserManager(BaseUserManager):
 
-    def create_user(self, email, password, **extra_fields):
+
+    def create_user(self, email, username='', password=None):
         if not email:
-            raise ValueError(_('Users must have an email address'))
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+            raise ValueError("User must have an email")
+
+        user = self.model(
+            email=self.normalize_email(email)
+        )
         user.set_password(password)
-        user.save()
+        print(user.password)  # change password to hash
+        user.is_admin = False
+        user.is_staff = False
+        user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        return self.create_user(email, password, **extra_fields)
+    def create_superuser(self, email, password=None):
+        if not email:
+            raise ValueError("User must have an email")
+        if not password:
+            raise ValueError("User must have a password")
+        user = self.model(
+            email=self.normalize_email(email)
+        )
+        user.set_password(password)  # change password to hash
+        user.is_admin = True
+        user.is_staff = True
+        user.save(using=self._db)
+        return user

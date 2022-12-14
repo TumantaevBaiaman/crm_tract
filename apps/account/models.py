@@ -11,7 +11,7 @@ class ModelsSatusAccount(models.Model):
 
 class ModelsAccount(models.Model):
     name = models.CharField(max_length=255, null=False)
-    status = models.ForeignKey(ModelsSatusAccount, on_delete=models.CASCADE)
+    status = models.ForeignKey(ModelsSatusAccount, on_delete=models.CASCADE, blank=True, null=True)
     create_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
