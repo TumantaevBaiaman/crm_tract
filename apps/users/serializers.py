@@ -32,7 +32,11 @@ class SerializerUser(serializers.ModelSerializer):
             'email',
             'username',
             'lastname',
-            "date_of_birth"
+            "date_of_birth",
+            "is_admin",
+            "is_active",
+            "status",
+            "phone",
         )
 
 
