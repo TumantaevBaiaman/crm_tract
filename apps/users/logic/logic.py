@@ -44,9 +44,11 @@ def create_profile(user, data):
                 'errors': ['User with this email already exists. Try again with new email address.']
             }, status=status.HTTP_400_BAD_REQUEST)
         else:
+            data._mutable = True
             password = generate_password()
             data['password'] = password
             serializer = SignUpSerializer(data=data)
+            data._mutable = False
             if serializer.is_valid():
                 valid_data = serializer.validated_data
                 email, password = valid_data['email'], valid_data['password']
@@ -81,9 +83,11 @@ def create_profile(user, data):
                 'errors': ['User with this email already exists. Try again with new email address.']
             }, status=status.HTTP_400_BAD_REQUEST)
         else:
+            data._mutable = True
             password = generate_password()
             data['password'] = password
             serializer = SignUpSerializer(data=data)
+            data._mutable = False
             if serializer.is_valid():
                 valid_data = serializer.validated_data
                 email, password = valid_data['email'], valid_data['password']
