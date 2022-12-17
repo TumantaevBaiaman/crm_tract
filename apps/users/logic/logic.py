@@ -4,9 +4,9 @@ import random
 import string
 
 from apps.account.serializers import SerializerCreateAccount
-from apps.users.models import ModelsUser
+from apps.users.models import ModelsUser, ModelsSatus
 from apps.account.models import ModelsAccount
-from apps.users.serializers import SignUpSerializer, serialize_errors, SerializerUser
+from apps.users.serializers import SignUpSerializer, serialize_errors, SerializerUser, SerializerSatus
 from django.conf import settings
 from django.core.mail import send_mail
 
@@ -159,4 +159,12 @@ def get_user_list(user):
     return Response({
         'success': True,
         'users': SerializerUser(users, many=True).data,
+    }, status=status.HTTP_200_OK)
+
+
+def get_status_list():
+    statuses = ModelsSatus.objects.all()
+    return Response({
+        'success': True,
+        'users': SerializerSatus(statuses, many=True).data,
     }, status=status.HTTP_200_OK)
