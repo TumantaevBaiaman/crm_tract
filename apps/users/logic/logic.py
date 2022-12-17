@@ -6,7 +6,7 @@ import string
 from apps.account.serializers import SerializerCreateAccount
 from apps.users.models import ModelsUser
 from apps.account.models import ModelsAccount
-from apps.users.serializers import SignUpSerializer, serialize_errors
+from apps.users.serializers import SignUpSerializer, serialize_errors, SerializerUser
 from django.conf import settings
 from django.core.mail import send_mail
 
@@ -145,3 +145,14 @@ def create_account(user, data):
             'account': account.name,
         }
     }, status=status.HTTP_201_CREATED)
+
+
+def get_user_list(user):
+    print(user)
+    print(user.account_id)
+    user = ModelsUser.objects.get(id=user.id, is_active=True)
+    users = ModelsUser.objects.filter(account_id=user.account_id_id)
+    return Response({
+        'success': True,
+        'users': SerializerUser(users, many=True).data,
+    }, status=status.HTTP_200_OK)
