@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .logic.logic import create_profile, create_account
+from .logic.logic import create_profile, create_account, get_user_list
 from .models import ModelsUser
 
 
@@ -35,3 +35,10 @@ class LoginView(TokenObtainPairView):
         return Response({
             'detail': "No active account found with the given credentials",
         }, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class ViewListUser(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        return get_user_list(request.user)

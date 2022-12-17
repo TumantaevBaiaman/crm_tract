@@ -6,7 +6,7 @@ import string
 from apps.account.serializers import SerializerCreateAccount
 from apps.users.models import ModelsUser
 from apps.account.models import ModelsAccount
-from apps.users.serializers import SignUpSerializer, serialize_errors
+from apps.users.serializers import SignUpSerializer, serialize_errors, SerializerUser
 from django.conf import settings
 from django.core.mail import send_mail
 
@@ -44,9 +44,11 @@ def create_profile(user, data):
                 'errors': ['User with this email already exists. Try again with new email address.']
             }, status=status.HTTP_400_BAD_REQUEST)
         else:
+            data._mutable = True
             password = generate_password()
             data['password'] = password
             serializer = SignUpSerializer(data=data)
+            data._mutable = False
             if serializer.is_valid():
                 valid_data = serializer.validated_data
                 email, password = valid_data['email'], valid_data['password']
@@ -81,9 +83,11 @@ def create_profile(user, data):
                 'errors': ['User with this email already exists. Try again with new email address.']
             }, status=status.HTTP_400_BAD_REQUEST)
         else:
+            data._mutable = True
             password = generate_password()
             data['password'] = password
             serializer = SignUpSerializer(data=data)
+            data._mutable = False
             if serializer.is_valid():
                 valid_data = serializer.validated_data
                 email, password = valid_data['email'], valid_data['password']
@@ -145,3 +149,14 @@ def create_account(user, data):
             'account': account.name,
         }
     }, status=status.HTTP_201_CREATED)
+
+
+def get_user_list(user):
+    print(user)
+    print(user.account_id)
+    user = ModelsUser.objects.get(id=user.id, is_active=True)
+    users = ModelsUser.objects.filter(account_id=user.account_id_id)
+    return Response({
+        'success': True,
+        'users': SerializerUser(users, many=True).data,
+    }, status=status.HTTP_200_OK)
