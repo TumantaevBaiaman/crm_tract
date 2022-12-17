@@ -18,7 +18,7 @@ class ModelsSatus(models.Model):
 
 class ModelsUser(AbstractBaseUser, PermissionsMixin):
     account_id = models.ForeignKey(
-        ModelsAccount, on_delete=models.CASCADE,
+        ModelsAccount, on_delete=models.SET_NULL,
         null=True, blank=True
     )
     email = models.EmailField(
@@ -31,7 +31,7 @@ class ModelsUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     status = models.ForeignKey(
-        ModelsSatus, on_delete=models.CASCADE,
+        ModelsSatus, on_delete=models.SET_NULL,
         null=True, blank=True
     )
     username = models.CharField(max_length=255, blank=True, null=True)
