@@ -12,21 +12,21 @@ class ViewRegisterAccount(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        return create_account(request.user, request.data)
+        return create_account(request)
 
 
 class ViewListStatus(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        return get_status_list()
+        return get_status_list(request)
 
 
 class ViewRegisterUser(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        return create_profile(request.user, request.data)
+        return create_profile(request)
 
 
 class LoginView(TokenObtainPairView):
@@ -48,4 +48,4 @@ class ViewListUser(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        return get_user_list(request.user)
+        return get_user_list(request)
