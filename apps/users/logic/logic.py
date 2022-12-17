@@ -100,11 +100,7 @@ def create_profile(user, data):
                 user = ModelsUser.objects.create_user(
                     username=email,
                     email=email,
-                    password=password,
-                    lastname=valid_data['lastname'] if valid_data['lastname'] else None,
-                    phone=valid_data['phone'] if valid_data['phone'] else None,
-                    date_of_birth=valid_data['date_of_birth'] if valid_data['date_of_birth'] else None,
-
+                    password=password
                 )
             else:
                 return Response({
