@@ -237,3 +237,19 @@ def get_status_list(user, data):
         'success': True,
         'users': SerializerSatus(statuses, many=True).data,
     }, status=status.HTTP_200_OK)
+
+@check_auth()
+def get_profile(user, data):
+    if user.status_id:
+        status_model = ModelsSatus.objects.get(id=user.status_id)
+        return Response({
+            'success': True,
+            'profile': SerializerUser(user).data,
+            'status': SerializerSatus(status_model).data,
+            'account': SerializerCreateAccount(user.account_id).data,
+        }, status=status.HTTP_200_OK)
+    else:
+        return Response({
+            'success': True,
+            'profile': SerializerUser(user).data,
+        }, status=status.HTTP_200_OK)

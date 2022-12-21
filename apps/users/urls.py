@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     ViewRegisterAccount,
     ViewRegisterUser, LoginView,
-    ViewListUser, ViewListStatus
+    ViewListUser, ViewListStatus, ProfileView
 )
 
 urlpatterns = [
@@ -12,5 +12,6 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='token'),
     path('user_list/', ViewListUser.as_view(), name='employee-list'),
     path('status_list/', ViewListStatus.as_view(), name='status-list'),
+    path('profile/', ProfileView.as_view(), name='profile'),
 
 ]

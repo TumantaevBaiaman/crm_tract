@@ -1,11 +1,10 @@
-from django.contrib import admin
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView
-
 from .views import (
-    ViewCreateCustomer
+    ViewCustomer, ViewGetCustomers, ViewAllCustomers
 )
 
 urlpatterns = [
-    path('create/', ViewCreateCustomer.as_view(), name='register-account'),
+    path('', ViewCustomer.as_view(), name='create-customer'),
+    path('empl-customers/', ViewGetCustomers.as_view(), name='get-customers'),
+    path('all-customers/', ViewAllCustomers.as_view(), name='get-all-customers'),
 ]

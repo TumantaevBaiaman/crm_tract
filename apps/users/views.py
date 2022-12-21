@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .logic.logic import create_profile, create_account, get_user_list, get_status_list
+from .logic.logic import create_profile, create_account, get_user_list, get_status_list, get_profile
 from .models import ModelsUser
 
 
@@ -49,3 +49,10 @@ class ViewListUser(APIView):
 
     def get(self, request):
         return get_user_list(request)
+
+
+class ProfileView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        return get_profile(request)
