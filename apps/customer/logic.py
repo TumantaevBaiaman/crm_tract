@@ -1,4 +1,9 @@
-from . import models
+from rest_framework import status
+from rest_framework.response import Response
+
+from . import models, serializers
+from ..users.logic.logic import check_auth
+from ..users.serializers import serialize_errors
 
 
 def extract_request_data(request):
@@ -13,18 +18,56 @@ def extract_request_data(request):
     return data
 
 
-def create_customer(data):
-
+@check_auth('employee')
+def create_customer(user, data):
     try:
-        customer = models.ModelsCustomer.objects.create(
-            user_id=data['user'],
-            full_name=data['full_name'],
-            last_name=data['last_name'],
-            address=data['address']
-        )
-        customer.save()
-
+        serializer = serializers.SerializerCustomer(data=data)
+        if serializer.is_valid():
+            customer = models.ModelsCustomer.objects.create(
+                user_id=user.id,
+                account=user.account_id,
+                email=data['email'],
+                full_name=data['full_name'],
+                last_name=data['last_name'],
+                address=data['address']
+            )
+            customer.save()
+            return Response({
+                'success': True
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                'success': False,
+                'errors': serialize_errors(serializer.errors)
+            }, status=status.HTTP_400_BAD_REQUEST)
     except BaseException as ex:
-        return {'success': 'False'}
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@check_auth('employee')
+def get_customers(user, data):
+    if 'id' in list(data.keys()):
+        customers = models.ModelsCustomer.objects.get(user=user, id=data["id"])
+        return Response({
+            'success': True,
+            'customers': serializers.SerializerCustomer(customers).data,
+        }, status=status.HTTP_200_OK)
+    else:
+        customers = models.ModelsCustomer.objects.filter(user=user)
+        return Response({
+            'success': True,
+            'customers': serializers.SerializerCustomer(customers, many=True).data,
+        }, status=status.HTTP_200_OK)
+
+
+@check_auth('admin')
+def get_all_customers(user, data):
+    customers = models.ModelsCustomer.objects.filter(account=user.account_id)
+    return Response({
+        'success': True,
+        'customers': serializers.SerializerCustomer(customers, many=True).data,
+    }, status=status.HTTP_200_OK)
 
 
