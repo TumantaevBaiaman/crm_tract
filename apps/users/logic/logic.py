@@ -3,7 +3,7 @@ from rest_framework.response import Response
 import random
 import string
 
-from apps.account.serializers import SerializerCreateAccount
+from apps.account.serializers import SerializerAccount
 from apps.users.models import ModelsUser, ModelsSatus
 from apps.account.models import ModelsAccount
 from apps.users.serializers import SignUpSerializer, serialize_errors, SerializerUser, SerializerSatus
@@ -199,7 +199,7 @@ def create_account(user, data):
             'errors': ['Account with this name already exists. Try again with new name.']
         }, status=status.HTTP_400_BAD_REQUEST)
     else:
-        serializer = SerializerCreateAccount(data=data)
+        serializer = SerializerAccount(data=data)
         if serializer.is_valid():
             account = ModelsAccount.objects.create(name=name)
         else:
@@ -246,7 +246,7 @@ def get_profile(user, data):
             'success': True,
             'profile': SerializerUser(user).data,
             'status': SerializerSatus(status_model).data,
-            'account': SerializerCreateAccount(user.account_id).data,
+            'account': SerializerAccount(user.account_id).data,
         }, status=status.HTTP_200_OK)
     else:
         return Response({

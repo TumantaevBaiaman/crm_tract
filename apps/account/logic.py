@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from apps.account.models import ModelsAccount
-from apps.account.serializers import SerializerCreateAccount
+from apps.account.serializers import SerializerAccount
 from apps.users.models import ModelsUser
 from apps.users.serializers import SerializerUser
 
@@ -13,7 +13,7 @@ def get_account(user, data):
         user = ModelsUser.objects.get(id=user.id)
         return Response({
             'success': True,
-            'account': SerializerCreateAccount(account).data,
+            'account': SerializerAccount(account).data,
             'user': SerializerUser(user).data,
         }, status=status.HTTP_200_OK)
     except:
