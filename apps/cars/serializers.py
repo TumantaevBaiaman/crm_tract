@@ -9,7 +9,7 @@ from apps.users.serializers import (
 )
 
 
-class SerializerCreateCar(serializers.ModelSerializer):
+class SerializerCar(serializers.ModelSerializer):
 
     class Meta:
         model = models.ModelsCars

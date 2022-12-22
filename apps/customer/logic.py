@@ -49,12 +49,12 @@ def create_customer(user, data):
 @check_auth('employee')
 def get_customers(user, data):
     if 'id' in list(data.keys()):
-        customers = models.ModelsCustomer.objects.get(
+        customer = models.ModelsCustomer.objects.get(
             user=user, id=data["id"], deleted=False
         )
         return Response({
             'success': True,
-            'customers': serializers.SerializerCustomer(customers).data,
+            'customer': serializers.SerializerCustomer(customer).data,
         }, status=status.HTTP_200_OK)
     else:
         customers = models.ModelsCustomer.objects.filter(user=user)
