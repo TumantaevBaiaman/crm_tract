@@ -12,6 +12,7 @@ class ModelsCustomer(models.Model):
     last_name = models.CharField(max_length=50)
     address = models.CharField(max_length=122, blank=True)
     create_at = models.DateTimeField(auto_now_add=True)
+    deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.full_name
