@@ -10,6 +10,7 @@ class ViewCustomer(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
+        print(request.data)
         return create_customer(request)
 
 
