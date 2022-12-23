@@ -5,5 +5,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from . import views
 
 urlpatterns = [
-    path('create/', views.ViewCreateCar.as_view(), name='create-car'),
+    path('', views.ViewCar.as_view(), name='car'),
+    path('empl-car/', views.ViewGetCar.as_view(), name='get-car'),
 ]
