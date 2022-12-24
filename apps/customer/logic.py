@@ -57,7 +57,7 @@ def get_customers(user, data):
             'customer': serializers.SerializerCustomer(customer).data,
         }, status=status.HTTP_200_OK)
     else:
-        customers = models.ModelsCustomer.objects.filter(user=user)
+        customers = models.ModelsCustomer.objects.filter(user=user, deleted=False)
         return Response({
             'success': True,
             'customers': serializers.SerializerCustomer(customers, many=True).data,

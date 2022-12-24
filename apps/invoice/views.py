@@ -15,7 +15,7 @@ class ViewCreateInvoice(APIView):
 
         try:
             data = logic.extract_request_data(request)
-            serializer = serializers.SerializerCreateInvoice(data=data)
+            serializer = serializers.SerializerInvoice(data=data)
             if serializer.is_valid():
                 logic.create_invoice(serializer.data)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
