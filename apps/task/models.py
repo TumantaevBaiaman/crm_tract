@@ -1,13 +1,13 @@
 from django.db import models
 
-from apps.invoice.models import ModelsInvoice
+from apps.cars.models import ModelsCars
 
 
 class ModelsTask(models.Model):
-    invoice_id = models.ForeignKey(ModelsInvoice, on_delete=models.CASCADE)
+    car_id = models.ForeignKey(ModelsCars, on_delete=models.CASCADE)
     work = models.CharField(max_length=255, null=False)
-    payment = models.CharField(max_length=255, null=False)
+    payment = models.IntegerField()
     create_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.invoice_id}, {self.work}"
+        return f"{self.car_id}, {self.work}"
