@@ -23,6 +23,9 @@ class ViewGetCustomers(APIView):
     def post(self, request):
         return get_customers(request)
 
+    def get(self, request):
+        return get_customers(request)
+
 
 class ViewUpdateCustomers(APIView):
     permission_classes = (IsAuthenticated,)
