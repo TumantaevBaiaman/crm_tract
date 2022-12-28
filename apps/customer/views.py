@@ -20,18 +20,26 @@ class ViewCustomer(APIView):
 class ViewGetCustomers(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request):
+    def post(self, request):
         return get_customers(request)
 
-    def put(self, request):
+
+class ViewUpdateCustomers(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
         return update_customers(request)
 
-    def delete(self, request):
+
+class ViewDeleteCustomers(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
         return delete_customers(request)
 
 
 class ViewAllCustomers(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request):
+    def post(self, request):
         return get_all_customers(request)
