@@ -17,11 +17,19 @@ class ViewCar(APIView):
 class ViewGetCar(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def post(self, request):
         return get_car(request)
+
+
+class ViewUpdateCar(APIView):
+    permission_classes = [IsAuthenticated]
 
     def put(self, request):
         return update_car(request)
 
-    def delete(self, request):
+
+class ViewDeleteCar(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
         return delete_car(request)
