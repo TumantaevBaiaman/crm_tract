@@ -27,7 +27,7 @@ class ViewGetCustomers(APIView):
 class ViewUpdateCustomers(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request):
+    def put(self, request):
         return update_customers(request)
 
 

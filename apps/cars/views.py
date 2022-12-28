@@ -24,7 +24,7 @@ class ViewGetCar(APIView):
 class ViewUpdateCar(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def put(self, request):
         return update_car(request)
 
 
