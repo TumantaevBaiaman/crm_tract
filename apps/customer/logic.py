@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from . import models, serializers
+from ..cars.models import ModelsCars
+from ..cars.serializers import SerializerCar
 from ..users.logic.logic import check_auth
 from ..users.serializers import serialize_errors
 
@@ -52,9 +54,11 @@ def get_customers(user, data):
         customer = models.ModelsCustomer.objects.get(
             user=user, id=data["id"], deleted=False
         )
+        cars = ModelsCars.objects.filter(customer=customer, deleted=False)
         return Response({
             'success': True,
             'customer': serializers.SerializerCustomer(customer).data,
+            'cars': SerializerCar(cars, many=True).data,
         }, status=status.HTTP_200_OK)
     else:
         customers = models.ModelsCustomer.objects.filter(user=user, deleted=False)
