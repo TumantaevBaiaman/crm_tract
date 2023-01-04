@@ -1,5 +1,10 @@
+from rest_framework import status
+from rest_framework.response import Response
 
 from . import models
+from .serializers import SerializerInvoice
+from ..cars.serializers import SerializerCar
+from ..users.logic.logic import check_auth
 
 
 def extract_request_data(request):
@@ -14,15 +19,19 @@ def extract_request_data(request):
     return data
 
 
-def create_invoice(data):
-
-    try:
-        customer = models.ModelsInvoice.objects.create(
-            crew_id_id=data['crew_id'],
-            car_id_id=data['car_id'],
-            description=data['description']
+@check_auth('employee')
+def get_invoice(user, data):
+    if 'id' in list(data.keys()):
+        invoice = models.ModelsInvoice.objects.get(
+            id=data["id"],
         )
-        customer.save()
-
-    except BaseException as ex:
-        return {'success': 'False'}
+        return Response({
+            'success': True,
+            'invoice': SerializerInvoice(invoice).data,
+        }, status=status.HTTP_200_OK)
+    else:
+        invoice = models.ModelsInvoice.objects.filter(crew_id=user)
+        return Response({
+            'success': True,
+            'invoice': SerializerInvoice(invoice, many=True).data,
+        }, status=status.HTTP_200_OK)
