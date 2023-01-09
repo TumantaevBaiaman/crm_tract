@@ -65,3 +65,21 @@ def create_task(user, data):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
+@check_auth('employee')
+def get_tasks(user, data):
+    if 'id_invoice' in list(data.keys()):
+        invoice = ModelsInvoice.objects.get(
+            id=data["id_invoice"],
+            deleted=False
+        )
+        tasks = invoice.tasks.all()
+        return Response({
+            'success': True,
+            'tasks': SerializerTask(tasks, many=True).data,
+        }, status=status.HTTP_200_OK)
+    else:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
