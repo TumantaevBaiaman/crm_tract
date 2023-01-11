@@ -69,8 +69,7 @@ def create_task(user, data):
 def get_tasks(user, data):
     if 'id_invoice' in list(data.keys()):
         invoice = ModelsInvoice.objects.get(
-            id=data["id_invoice"],
-            deleted=False
+            id=data["id_invoice"]
         )
         tasks = invoice.tasks.all()
         return Response({
@@ -78,6 +77,69 @@ def get_tasks(user, data):
             'tasks': SerializerTask(tasks, many=True).data,
         }, status=status.HTTP_200_OK)
     else:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@check_auth('employee')
+def update_tasks(user, data):
+    tasks_new = []
+    try:
+        car = ModelsCars.objects.get(id=data['car_id'], deleted=False)
+    except:
+        return Response({
+            'success': False,
+            'errors': ["car id wasn't entered"]
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        if data['update_tasks']:
+            tasks_update = data['update_tasks']
+            for task_item in tasks_update:
+                obj = ModelsTask.objects.get(id=task_item['id'])
+                obj.work = task_item['work']
+                obj.payment = task_item['payment']
+                obj.save()
+
+        if data['del_tasks']:
+            tasks_del = data['del_tasks']
+            for task_item in tasks_del:
+                obj = ModelsTask.objects.get(id=task_item)
+                obj.delete()
+
+        if data['new_tasks']:
+            task_list = []
+            tasks = data['new_tasks']
+            for task_item in tasks:
+                task = ModelsTask(**task_item)
+                task.car_id = ModelsCars.objects.get(id=car.id)
+                task_list.append(task)
+            tasks_new = ModelsTask.objects.bulk_create(task_list)
+        if 'invoice_id' in list(data.keys()):
+            invoice = ModelsInvoice.objects.get(id=data['invoice_id'])
+        else:
+            invoice = ModelsInvoice.objects.create(
+                crew_id=user,
+                car_id=car,
+                customer_id=car.customer,
+            )
+        if tasks_new:
+            invoice.tasks.add(*tasks_new)
+        tasks = invoice.tasks.all()
+
+        total_price = ModelsTask.objects.filter(pk__in=[task.pk for task in tasks]).aggregate(Sum('payment'))[
+            'payment__sum']
+        invoice.total_sum = total_price
+        invoice.save()
+
+        return Response({
+            'success': True,
+            'tasks': SerializerTask(tasks, many=True).data,
+            'invoice': SerializerInvoice(invoice).data
+        }, status=status.HTTP_201_CREATED)
+
+    except BaseException as ex:
         return Response({
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
