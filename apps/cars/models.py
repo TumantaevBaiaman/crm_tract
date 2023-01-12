@@ -10,7 +10,7 @@ class ModelsCars(models.Model):
     description = models.TextField()
     vin = models.CharField(max_length=55)
     model = models.CharField(max_length=255)
-    image = models.ImageField(blank=True, null=True)
+    image = models.ImageField(blank=True, null=True, upload_to='car')
     create_at = models.DateTimeField(auto_now_add=True)
     deleted = models.BooleanField(default=False)
 

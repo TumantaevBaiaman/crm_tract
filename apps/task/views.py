@@ -21,29 +21,3 @@ class ViewUpdateTask(APIView):
 
     def post(self, request):
         return update_tasks(request)
-"""
-{
-"car_id": 1, 
-"invoice_id": 1,
-"update_tasks": 
-    [
-        {
-          "id": 17, 
-          "work": "kjsh", 
-          "payment": 570,
-          "car_id": 1
-        }
-    ], 
-"new_tasks": [
-        { 
-          "work": "hsfjah", 
-          "payment": 7000
-          
-        }, 
-        {
-          "work": "jhhjhjjhgfdssdfgh", 
-          "payment": 8800}
-    ], 
-"del_tasks": [18]
-}
-"""
