@@ -18,15 +18,14 @@ def extract_request_data(request):
 @check_auth('employee')
 def create_car(user, data):
     try:
-        if data['id']:
+        if 'id' in list(data.keys()):
             try:
                 id = data['id']
                 car = models.ModelsCars.objects.get(id=id, deleted=False)
             except:
                 return Response({
                     'success': False,
-                }, status=status.HTTP_400_BAD_REQUEST)
-
+                }, status=status.HTTP_404_NOT_FOUND)
             try:
                 serializer = serializers.SerializerCar(
                     car,
@@ -44,7 +43,6 @@ def create_car(user, data):
                 return Response({
                     'success': False,
                 }, status=status.HTTP_400_BAD_REQUEST)
-
         else:
             serializer = serializers.SerializerCar(data=data)
             if serializer.is_valid():
