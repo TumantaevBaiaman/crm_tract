@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .logic.logic import create_profile, create_account, get_user_list, get_status_list, get_profile
+from .logic.logic import create_profile, create_account, get_user_list, get_status_list, get_profile, update_profile
 from .models import ModelsUser
 
 
@@ -56,3 +56,6 @@ class ProfileView(APIView):
 
     def get(self, request):
         return get_profile(request)
+
+    def put(self, request):
+        return update_profile(request)

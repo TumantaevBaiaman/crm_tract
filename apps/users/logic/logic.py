@@ -32,7 +32,7 @@ def check_auth(access_status=None):
                     if request.user:
                         if request.user.is_active:
                             if ModelsUser.objects.filter(id=request.user.id):
-                                user = ModelsUser.objects.get(id=request.user.id)
+                                user = ModelsUser.objects.get(id=request.user.id, is_active=True)
                                 if user.status_id:
                                     status_model = ModelsSatus.objects.get(id=user.status_id).name
             else:
@@ -253,3 +253,25 @@ def get_profile(user, data):
             'success': True,
             'profile': SerializerUser(user).data,
         }, status=status.HTTP_200_OK)
+
+
+@check_auth()
+def update_profile(user, data):
+    try:
+        serializer = SerializerUser(
+            user,
+            data=data,
+            partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'success': True,
+                'user': SerializerUser(user).data,
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+

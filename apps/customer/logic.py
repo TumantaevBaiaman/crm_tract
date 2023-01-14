@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from . import models, serializers
 from ..cars.models import ModelsCars
 from ..cars.serializers import SerializerCar
+from ..invoice.models import ModelsInvoice
+from ..invoice.serializers import SerializerInvoice
 from ..users.logic.logic import check_auth
 from ..users.serializers import serialize_errors
 
@@ -55,10 +57,12 @@ def get_customers(user, data):
             user=user, id=data["id"], deleted=False
         )
         cars = ModelsCars.objects.filter(customer=customer, deleted=False)
+        invoices = ModelsInvoice.objects.filter(customer_id=customer)
         return Response({
             'success': True,
             'customer': serializers.SerializerCustomer(customer).data,
             'cars': SerializerCar(cars, many=True).data,
+            'invoices': SerializerInvoice(invoices, many=True).data,
         }, status=status.HTTP_200_OK)
     else:
         customers = models.ModelsCustomer.objects.filter(user=user, deleted=False)
@@ -130,5 +134,6 @@ def delete_customers(user, data):
         return Response({
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
+
 
 
