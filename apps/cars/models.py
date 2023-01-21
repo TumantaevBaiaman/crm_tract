@@ -8,6 +8,7 @@ class ModelsCars(models.Model):
     customer = models.ForeignKey(ModelsCustomer, on_delete=models.CASCADE)
     account = models.ForeignKey(ModelsAccount, on_delete=models.CASCADE, null=True, blank=True)
     description = models.TextField()
+    stock = models.CharField(max_length=55)
     vin = models.CharField(max_length=55)
     model = models.CharField(max_length=255)
     make = models.CharField(max_length=255)

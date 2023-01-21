@@ -24,6 +24,7 @@ class ModelsInvoice(models.Model):
     }
 
     STATUS_CHOICES = dict_to_choices(STATUSES)
+    number = models.CharField(max_length=255, null=False)
     crew_id = models.ForeignKey(ModelsUser, on_delete=models.CASCADE)
     car_id = models.ForeignKey(ModelsCars, on_delete=models.CASCADE)
     customer_id = models.ForeignKey(ModelsCustomer, on_delete=models.CASCADE)

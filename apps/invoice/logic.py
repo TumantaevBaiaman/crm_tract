@@ -1,10 +1,49 @@
+from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
+import os
+from django.core.files.storage import default_storage
+from django.http import HttpResponse
+from borb.pdf import Document
+from borb.pdf import Page
+from borb.pdf import SingleColumnLayout
+from borb.pdf import PageLayout
+from decimal import Decimal
+from borb.pdf import Image
+from borb.pdf import FixedColumnWidthTable
+from borb.pdf import Paragraph
+from borb.pdf import Alignment
+from borb.pdf import HexColor, X11Color
+from borb.pdf import TableCell
+from borb.pdf import PDF
+from borb.pdf.canvas.layout.layout_element import LayoutElement
+import io
+from datetime import datetime
+from borb.pdf import FlexibleColumnWidthTable
+import random
+import typing
+from pathlib import Path
+from PIL import Image as IM
 
 from . import models
 from .serializers import SerializerInvoice
+from ..account.models import ModelsAccount
 from ..cars.serializers import SerializerCar
+from ..customer.models import ModelsCustomer
 from ..users.logic.logic import check_auth
+
+
+class Product:
+    """
+    This class represents a purchased product
+    """
+
+    def __init__(self, name: str, date: str, dateto: str, status: str, total: float):
+        self.name: str = name
+        self.date: str = date
+        self.dateto: str = dateto
+        self.status: str = status
+        self.total: float = total
 
 
 def extract_request_data(request):
@@ -35,3 +74,484 @@ def get_invoice(user, data):
             'success': True,
             'invoice': SerializerInvoice(invoice, many=True).data,
         }, status=status.HTTP_200_OK)
+
+
+def _build_invoice_information_head(user, data):
+    invoice = models.ModelsInvoice.objects.get(
+        id=data["id"],
+    )
+    crew = invoice.crew_id
+    account = ModelsAccount.objects.get(id=crew.account_id.id)
+    url = account.logo.url.replace('/media/', '')
+
+    image_path = os.path.join(settings.MEDIA_ROOT, url)
+    with default_storage.open(image_path, 'rb') as f:
+        img = IM.open(f)
+        width, height = img.size
+    if width > height:
+        w = 128
+        h = 80
+    elif width < height:
+        w = 80
+        h = 128
+    else:
+        w = 128
+        h = 128
+    image: LayoutElement = Image(
+        Path(image_path),
+        width=Decimal(w),
+        height=Decimal(h),
+        horizontal_alignment=Alignment.LEFT
+    )
+    table_001 = FixedColumnWidthTable(number_of_columns=3, number_of_rows=4)
+    table_001.add(Paragraph(" "))
+    table_001.add(
+        Paragraph("Invoice", font="Helvetica-Bold", font_size=11, horizontal_alignment=Alignment.CENTERED)
+    )
+    table_001.add(TableCell(image, row_span=4))
+
+    table_001.add(
+        Paragraph(f"{account.name}", font="Helvetica-Bold", font_size=12)
+    )
+    table_001.add(Paragraph(" "))
+    table_001.add(
+        Paragraph(
+            f"""
+            {account.street1}
+            {account.street2}
+            {account.country}
+            {account.phone}
+            {account.email}
+            HST# {account.hst}
+            """, font="Helvetica", respect_newlines_in_text=True, font_size=8)
+    )
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+
+    table_001.no_borders()
+    return table_001
+
+
+def _build_invoice_information(user, data):
+    invoice = models.ModelsInvoice.objects.get(
+        id=data["id"],
+    )
+    table_001 = FixedColumnWidthTable(number_of_rows=3, number_of_columns=3)
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+
+    table_001.add(Paragraph("Billing Address", font="Helvetica-Bold", font_size=8))
+    table_001.add(TableCell(
+        Paragraph(
+            "Statement Date: https://api.amazon.com/user/",
+            font="Helvetica-Bold",
+            font_size=9,
+            horizontal_alignment=Alignment.RIGHT
+        ),
+        col_span=2
+
+    )
+
+    )
+    te = 'Detail'
+    table_001.add(Paragraph(
+        f"""{te}
+        Detail
+        Detail
+        Phone: 999999999
+        Email: asd@gmail.com asd@gmail.com asd@gmail.com asd@gmail.com asd@gmail.com asd@gmail.com
+        """, font="Helvetica", respect_newlines_in_text=True, font_size=8, horizontal_alignment=Alignment.LEFT,
+        vertical_alignment=Alignment.TOP))
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+    table_001.set_padding_on_all_cells(Decimal(0), Decimal(0), Decimal(0), Decimal(0))
+    table_001.no_borders()
+    return table_001
+
+
+def _build_invoice_detail_information(user, data):
+    invoice = models.ModelsInvoice.objects.get(
+        id=data["id"],
+    )
+    customer = invoice.customer_id
+    crew = invoice.crew_id
+    table_001 = FixedColumnWidthTable(number_of_rows=3, number_of_columns=3)
+    table_002 = FixedColumnWidthTable(number_of_rows=6, number_of_columns=2)
+    table_002.add(Paragraph("Invoice Number:", font="Helvetica-Bold", font_size=9,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph(f"{invoice.number}", font="Helvetica-Bold", font_size=9,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph("PO Number:", font="Helvetica-Bold", font_size=9,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph("164810", font="Helvetica-Bold", font_size=9,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph(" "))
+    table_002.add(Paragraph(" "))
+
+    table_002.add(Paragraph("Work Order Close Date:", font="Helvetica-Bold", font_size=7,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph(f"{invoice.start_at.strftime('%d/%m/%y')}", font="Helvetica", font_size=7,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph("Invoice Date:", font="Helvetica-Bold", font_size=7,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph(f"{invoice.finished_at.strftime('%d/%m/%y')}", font="Helvetica", font_size=7,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph("Net Terms:", font="Helvetica-Bold", font_size=7,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.add(Paragraph("DUE UPON RECEIPT", font="Helvetica", font_size=7,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_002.no_borders()
+
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+
+    table_001.add(Paragraph("Billing Address", font="Helvetica-Bold", font_size=8))
+    table_001.add(
+        Paragraph(
+            "Service Address:",
+            font="Helvetica-Bold",
+            font_size=8,
+        ))
+    table_001.add(TableCell(table_002, row_span=2))
+    te = 'Detail'
+    table_001.add(Paragraph(
+        f"""{customer.full_name}
+        {customer.street1}
+        {customer.street2}
+        {customer.country}
+        Phone: {customer.phone}
+        Email: {customer.email}
+        """, font="Helvetica", respect_newlines_in_text=True, font_size=8, horizontal_alignment=Alignment.LEFT,
+        vertical_alignment=Alignment.TOP))
+    table_001.add(Paragraph("Same as Billing Address", font="Helvetica", font_size=8))
+
+    table_001.set_padding_on_all_cells(Decimal(0), Decimal(0), Decimal(0), Decimal(0))
+    table_001.no_borders()
+    return table_001
+
+
+def _build_itemized_description_table(products: typing.List[Product] = []):
+    table_001 = FixedColumnWidthTable(
+        number_of_rows=len(products) + 7,
+        number_of_columns=7,
+    )
+    for h in ["Invoice Number", "Invoice Date", "Due Date", "Invoice Status", "Total", "Paid", "Balance"]:
+        table_001.add(
+            TableCell(
+                Paragraph(h, font="Helvetica-Bold", font_size=8)
+            )
+        )
+
+    for row_number, item in enumerate(products):
+        table_001.add(TableCell(Paragraph(item.name, font="Helvetica-Bold", font_size=8
+
+                                          )))
+        table_001.add(TableCell(Paragraph(str(item.date), font="Helvetica", font_size=8)))
+        table_001.add(TableCell(Paragraph(str(item.dateto), font="Helvetica", font_size=8)))
+        table_001.add(
+            TableCell(Paragraph(" " + str(item.status), font="Helvetica", font_size=8))
+        )
+        table_001.add(
+            TableCell(Paragraph("$ " + str(item.total), font="Helvetica", font_size=8))
+        )
+        table_001.add(
+            TableCell(Paragraph("$ 0", font="Helvetica", font_size=8))
+        )
+        table_001.add(
+            TableCell(Paragraph("$ " + str(item.total), font="Helvetica", font_size=8))
+        )
+
+    # for row_number in range(2):
+    for _ in range(0, 7):
+        table_001.add(TableCell(Paragraph(" ", border_top=True)))
+
+    # total
+    subtotal: float = sum([x.total for x in products])
+    hst: float = (sum([x.total for x in products]) * 13) / 100
+    table_001.add(
+        TableCell(
+            Paragraph(
+                "Subtotal:",
+                font="Helvetica-Bold",
+                horizontal_alignment=Alignment.RIGHT,
+                font_size=8,
+                padding_top=5,
+            ),
+            col_span=6,
+        )
+    )
+    table_001.add(
+        TableCell(Paragraph(f"$ {subtotal}", font_size=8,
+                            padding_top=5, horizontal_alignment=Alignment.LEFT))
+    )
+
+    table_001.add(
+        TableCell(
+            Paragraph(
+                "HST:",
+                font="Helvetica-Bold",
+                horizontal_alignment=Alignment.RIGHT,
+                font_size=8,
+                padding_top=5,
+            ),
+            col_span=6,
+        )
+    )
+    table_001.add(
+        TableCell(Paragraph(f"$ {hst}", font_size=8,
+                            padding_top=5, horizontal_alignment=Alignment.LEFT))
+    )
+
+    table_001.add(
+        TableCell(
+            Paragraph(
+                "Total Due:",
+                font="Helvetica-Bold",
+                horizontal_alignment=Alignment.RIGHT,
+                font_size=8,
+                padding_top=5,
+            ),
+            col_span=6,
+        )
+    )
+    table_001.add(
+        TableCell(Paragraph(f"$ {hst + subtotal}", font_size=8,
+                            padding_top=5, horizontal_alignment=Alignment.LEFT))
+    )
+
+    for _ in range(0, 7):
+        table_001.add(TableCell(Paragraph(" ")))
+
+    table_001.add(
+        TableCell(
+            Paragraph(
+                """
+                Comment: 
+                Thank you for your business
+                """,
+                font_size=8,
+                font="Helvetica",
+                padding_top=5, respect_newlines_in_text=True
+            ),
+            col_span=7, )
+    )
+
+    table_001.set_padding_on_all_cells(Decimal(2), Decimal(2), Decimal(2), Decimal(2))
+    table_001.no_borders()
+    return table_001
+
+
+def _build_itemized_detail_description_table(user, data):
+    """
+    This function builds a Table containing itemized billing information
+    :param:     products
+    :return:    a Table containing itemized billing information
+    """
+    invoice = models.ModelsInvoice.objects.get(
+        id=data["id"],
+    )
+    task_list = invoice.tasks.all()
+    car = invoice.car_id
+    crew = invoice.crew_id
+    table_001 = FixedColumnWidthTable(
+        number_of_rows=7 + len(task_list),
+        number_of_columns=3,
+    )
+    table_001.add(
+        TableCell(
+            Paragraph(
+                f"{car.model} ( Stock#: {car.stock}, VIN: {car.vin})",
+                font="Helvetica",
+                horizontal_alignment=Alignment.LEFT,
+                font_size=12,
+                padding_top=5,
+            ),
+            col_span=3,
+        )
+    )
+
+    # table_001.add(Paragraph(" "))
+
+    for task in task_list:
+        table_001.add(
+            TableCell(
+                Paragraph(
+                    f"{task.work}",
+                    font="Helvetica-Bold",
+                    horizontal_alignment=Alignment.CENTERED,
+                    font_size=8,
+                ),
+                col_span=2,
+            ))
+        table_001.add(
+            Paragraph(
+                f"$ {task.payment}",
+                font="Helvetica-Bold",
+                horizontal_alignment=Alignment.RIGHT,
+                font_size=8,
+            )
+        )
+
+    for _ in range(0, 3):
+        table_001.add(TableCell(Paragraph(" ")))
+
+    table_001.add(
+        TableCell(
+            Paragraph(
+                """
+                Comment: 
+                Thank you for your business
+                """,
+                font_size=8,
+                font="Helvetica",
+                padding_top=5, respect_newlines_in_text=True
+            ),
+            col_span=3, )
+    )
+    for _ in range(0, 3):
+        table_001.add(TableCell(Paragraph(" ")))
+
+    table_002 = FixedColumnWidthTable(number_of_rows=2, number_of_columns=2)
+    table_002.add(Paragraph("Invoice Number:", font="Helvetica-Bold", font_size=9,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_002.add(Paragraph(f"{invoice.number}", font="Helvetica-Bold", font_size=9,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_002.add(Paragraph("PO Numbe:", font="Helvetica-Bold", font_size=9,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_002.add(Paragraph("164810", font="Helvetica-Bold", font_size=9,
+                            horizontal_alignment=Alignment.LEFT, ))
+
+    table_002.no_borders()
+    table_001.add(table_002)
+    for _ in range(0, 5):
+        table_001.add(TableCell(Paragraph(" ")))
+
+    table_003 = FixedColumnWidthTable(number_of_rows=2, number_of_columns=2)
+    table_003.add(Paragraph("Work completed by:", font="Helvetica-Bold", font_size=7,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_003.add(Paragraph(f"{crew.username.upper()}", font="Helvetica", font_size=7,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_003.add(Paragraph("Generated By:", font="Helvetica-Bold", font_size=7,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_003.add(Paragraph(f"{crew.username.upper()} {crew.lastname.upper()}", font="Helvetica", font_size=7,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_003.no_borders()
+    table_001.add(table_003)
+    table_001.add(Paragraph(" "))
+
+    table_004 = FixedColumnWidthTable(number_of_rows=3, number_of_columns=3)
+    table_004.add(Paragraph("Sub Total:", font="Helvetica-Bold", font_size=8,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_004.add(Paragraph(" "))
+    table_004.add(Paragraph(f"${invoice.total_sum}", font="Helvetica", font_size=8,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_004.add(Paragraph("HST:", font="Helvetica-Bold", font_size=8,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_004.add(Paragraph(" "))
+    table_004.add(Paragraph("$15.60", font="Helvetica", font_size=8,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_004.add(Paragraph("Total:", font="Helvetica-Bold", font_size=8,
+                            horizontal_alignment=Alignment.RIGHT, ))
+    table_004.add(Paragraph(" "))
+    table_004.add(Paragraph(f"${invoice.total_sum}", font="Helvetica-Bold", font_size=8,
+                            horizontal_alignment=Alignment.LEFT, ))
+    table_001.set_padding_on_all_cells(Decimal(0), Decimal(0), Decimal(0), Decimal(0))
+    table_004.no_borders()
+    table_001.add(table_004)
+
+    table_001.set_padding_on_all_cells(Decimal(2), Decimal(2), Decimal(2), Decimal(2))
+    table_001.no_borders()
+
+    return table_001
+
+@check_auth('default')
+def generate_pdf_for_detailed_invoice(user, data):
+    # Create document
+    si = io.BytesIO()
+    pdf = Document()
+
+    # Add page
+    page = Page()
+    pdf.add_page(page)
+
+    # create PageLayout
+    page_layout: PageLayout = SingleColumnLayout(page)
+    page_layout.vertical_margin = page.get_page_info().get_height() * Decimal(0.02)
+
+    # Invoice information table
+    page_layout.add(_build_invoice_information_head(user, data))
+    # page_layout.add(_build_invoice_information())
+    page_layout.add(_build_invoice_detail_information(user, data))
+
+    # Empty paragraph for spacing
+    page_layout.add(Paragraph(" "))
+
+    # Empty paragraph for spacing
+    page_layout.add(Paragraph(" "))
+
+    # Itemized description
+    page_layout.add(
+        _build_itemized_detail_description_table(user, data)
+    )
+    PDF.dumps(si, pdf)
+    si.seek(0)
+
+    response = HttpResponse(si.read(), content_type=('application/pdf'))
+    response.headers['Content-Disposition'] = "attachment; filename=asd"
+    response.headers["Content-type"] = "application/pdf"
+    si.close()
+    return response
+
+
+@check_auth('default')
+def generate_pdf_list_invoice(user, data):
+    # Create document
+    si = io.BytesIO()
+    pdf = Document()
+
+    # Add page
+    page = Page()
+    pdf.add_page(page)
+
+    # create PageLayout
+    page_layout: PageLayout = SingleColumnLayout(page)
+    page_layout.vertical_margin = page.get_page_info().get_height() * Decimal(0.02)
+
+    # Invoice information table
+    page_layout.add(_build_invoice_information_head())
+    page_layout.add(_build_invoice_information())
+
+    # Empty paragraph for spacing
+    page_layout.add(Paragraph(" "))
+
+    # Empty paragraph for spacing
+    page_layout.add(Paragraph(" "))
+
+    # Itemized description
+    page_layout.add(
+        _build_itemized_description_table(
+            [
+                Product("2022-003712", '09/02/2022', '10/02/2022', 'Final', 113),
+                Product("2022-003712", '09/02/2022', '10/02/2022', 'Final', 113),
+                Product("2022-003712", '09/02/2022', '10/02/2022', 'Final', 113),
+                Product("2022-003712", '09/02/2022', '10/02/2022', 'Final', 113),
+                Product("2022-003712", '09/02/2022', '10/02/2022', 'Final', 113),
+                Product("2022-003712", '09/02/2022', '10/02/2022', 'Final', 113)
+            ]
+        )
+    )
+
+    PDF.dumps(si, pdf)
+    si.seek(0)
+
+    response = HttpResponse(si.read(), content_type=('application/pdf'))
+    response.headers['Content-Disposition'] = "attachment; filename=asd"
+    response.headers["Content-type"] = "application/pdf"
+    si.close()
+
+    return response
+
+
