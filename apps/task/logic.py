@@ -26,7 +26,6 @@ def extract_request_data_task(request):
 def create_task(user, data):
     try:
         car = ModelsCars.objects.get(id=data['car_id'])
-        print('hello')
     except:
         return Response({
             'success': False,

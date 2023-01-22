@@ -22,7 +22,7 @@ class InvoiceExport(APIView):
             data = extract_request_data(request)
             action_name = data['action']
             actions = {
-                'export': generate_pdf_for_detailed_invoice,
+                'export': generate_pdf_list_invoice,
             }
             action = actions[action_name]
             return action(request)
