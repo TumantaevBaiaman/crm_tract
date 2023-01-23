@@ -681,8 +681,8 @@ def export_invoices_csv(user, data):
     data_csv = [headers]
     for inv in invoices:
         customer = inv.customer_id.full_name
-        start_date = inv.start_at
-        finished_date = inv.finished_at
+        start_date = inv.start_at.strftime('%d/%m/%y')
+        finished_date = inv.finished_at.strftime('%d/%m/%y')
 
         for i, task in enumerate(inv.tasks.all()):
             if i != 0:
