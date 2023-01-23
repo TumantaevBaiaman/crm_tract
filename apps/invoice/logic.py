@@ -28,19 +28,6 @@ from ..account.models import ModelsAccount
 from ..users.logic.logic import check_auth
 
 
-class Product:
-    """
-    This class represents a purchased product
-    """
-
-    def __init__(self, name: str, date: str, dateto: str, status: str, total: float):
-        self.name: str = name
-        self.date: str = date
-        self.dateto: str = dateto
-        self.status: str = status
-        self.total: float = total
-
-
 def extract_request_data(request):
     data = {}
     user = request.user.id
@@ -71,13 +58,10 @@ def get_invoice(user, data):
         }, status=status.HTTP_200_OK)
 
 
-def _build_invoice_information_head(user, data):
-    if len(data) > 1:
-        invoice = data.first()
-    else:
-        invoice = models.ModelsInvoice.objects.get(
-            id=data['id']
-        )
+def _build_invoice_information_head_detail(user, data):
+    invoice = models.ModelsInvoice.objects.get(
+        id=data['invoice_id']
+    )
     crew = invoice.crew_id
     account = ModelsAccount.objects.get(id=crew.account_id.id)
     url = account.logo.url.replace('/media/', '')
@@ -105,6 +89,61 @@ def _build_invoice_information_head(user, data):
     table_001.add(Paragraph(" "))
     table_001.add(
         Paragraph("Invoice", font="Helvetica-Bold", font_size=11, horizontal_alignment=Alignment.CENTERED)
+    )
+    table_001.add(TableCell(image, row_span=4))
+
+    table_001.add(
+        Paragraph(f"{account.name}", font="Helvetica-Bold", font_size=12)
+    )
+    table_001.add(Paragraph(" "))
+    table_001.add(
+        Paragraph(
+            f"""
+            {account.street1}
+            {account.street2}
+            {account.country}
+            {account.phone}
+            {account.email}
+            HST# {account.hst}
+            """, font="Helvetica", respect_newlines_in_text=True, font_size=8)
+    )
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+    table_001.add(Paragraph(" "))
+
+    table_001.no_borders()
+    return table_001
+
+
+def _build_invoice_information_head(user, data):
+    invoice = data.first()
+    crew = invoice.crew_id
+    account = ModelsAccount.objects.get(id=crew.account_id.id)
+    url = account.logo.url.replace('/media/', '')
+
+    image_path = os.path.join(settings.MEDIA_ROOT, url)
+    with default_storage.open(image_path, 'rb') as f:
+        img = IM.open(f)
+        width, height = img.size
+    if width > height:
+        w = 128
+        h = 80
+    elif width < height:
+        w = 80
+        h = 128
+    else:
+        w = 128
+        h = 128
+    image: LayoutElement = Image(
+        Path(image_path),
+        width=Decimal(w),
+        height=Decimal(h),
+        horizontal_alignment=Alignment.LEFT
+    )
+    table_001 = FixedColumnWidthTable(number_of_columns=3, number_of_rows=4)
+    table_001.add(Paragraph(" "))
+    table_001.add(
+        Paragraph("Invoice Statement", font="Helvetica-Bold", font_size=11, horizontal_alignment=Alignment.CENTERED)
     )
     table_001.add(TableCell(image, row_span=4))
 
@@ -169,7 +208,7 @@ def _build_invoice_information(user, invoices):
 
 def _build_invoice_detail_information(user, data):
     invoice = models.ModelsInvoice.objects.get(
-        id=data["id"],
+        id=data["invoice_id"],
     )
     customer = invoice.customer_id
     crew = invoice.crew_id
@@ -229,11 +268,18 @@ def _build_invoice_detail_information(user, data):
     return table_001
 
 
-def _build_itemized_description_table(invoices):
-    table_001 = FixedColumnWidthTable(
-        number_of_rows=len(invoices) + 7,
-        number_of_columns=7,
-    )
+def _build_itemized_description_table(tax, invoices):
+    if tax:
+        table_001 = FixedColumnWidthTable(
+            number_of_rows=len(invoices) + 7,
+            number_of_columns=7,
+        )
+    else:
+        table_001 = FixedColumnWidthTable(
+            number_of_rows=len(invoices) + 5,
+            number_of_columns=7,
+        )
+
     for h in ["Invoice Number", "Invoice Date", "Due Date", "Invoice Status", "Total", "Paid", "Balance"]:
         table_001.add(
             TableCell(
@@ -266,57 +312,76 @@ def _build_itemized_description_table(invoices):
 
     # total
     subtotal: float = sum([x.total_sum for x in invoices])
-    hst: float = (sum([x.total_sum for x in invoices]) * 13) / 100
-    table_001.add(
-        TableCell(
-            Paragraph(
-                "Subtotal:",
-                font="Helvetica-Bold",
-                horizontal_alignment=Alignment.RIGHT,
-                font_size=8,
-                padding_top=5,
-            ),
-            col_span=6,
-        )
-    )
-    table_001.add(
-        TableCell(Paragraph(f"$ {subtotal}", font_size=8,
-                            padding_top=5, horizontal_alignment=Alignment.LEFT))
-    )
 
-    table_001.add(
-        TableCell(
-            Paragraph(
-                "HST:",
-                font="Helvetica-Bold",
-                horizontal_alignment=Alignment.RIGHT,
-                font_size=8,
-                padding_top=5,
-            ),
-            col_span=6,
+    if tax:
+        hst: float = (sum([x.total_sum for x in invoices]) * 13) / 100
+        table_001.add(
+            TableCell(
+                Paragraph(
+                    "Subtotal:",
+                    font="Helvetica-Bold",
+                    horizontal_alignment=Alignment.RIGHT,
+                    font_size=8,
+                    padding_top=5,
+                ),
+                col_span=6,
+            )
         )
-    )
-    table_001.add(
-        TableCell(Paragraph(f"$ {hst}", font_size=8,
-                            padding_top=5, horizontal_alignment=Alignment.LEFT))
-    )
+        table_001.add(
+            TableCell(Paragraph(f"$ {subtotal}", font_size=8,
+                                padding_top=5, horizontal_alignment=Alignment.LEFT))
+        )
 
-    table_001.add(
-        TableCell(
-            Paragraph(
-                "Total Due:",
-                font="Helvetica-Bold",
-                horizontal_alignment=Alignment.RIGHT,
-                font_size=8,
-                padding_top=5,
-            ),
-            col_span=6,
+        table_001.add(
+            TableCell(
+                Paragraph(
+                    "HST:",
+                    font="Helvetica-Bold",
+                    horizontal_alignment=Alignment.RIGHT,
+                    font_size=8,
+                    padding_top=5,
+                ),
+                col_span=6,
+            )
         )
-    )
-    table_001.add(
-        TableCell(Paragraph(f"$ {hst + subtotal}", font_size=8,
-                            padding_top=5, horizontal_alignment=Alignment.LEFT))
-    )
+        table_001.add(
+            TableCell(Paragraph(f"$ {hst}", font_size=8,
+                                padding_top=5, horizontal_alignment=Alignment.LEFT))
+        )
+
+        table_001.add(
+            TableCell(
+                Paragraph(
+                    "Total Due:",
+                    font="Helvetica-Bold",
+                    horizontal_alignment=Alignment.RIGHT,
+                    font_size=8,
+                    padding_top=5,
+                ),
+                col_span=6,
+            )
+        )
+        table_001.add(
+            TableCell(Paragraph(f"$ {hst + subtotal}", font_size=8,
+                                padding_top=5, horizontal_alignment=Alignment.LEFT))
+        )
+    else:
+        table_001.add(
+            TableCell(
+                Paragraph(
+                    "Total Due:",
+                    font="Helvetica-Bold",
+                    horizontal_alignment=Alignment.RIGHT,
+                    font_size=8,
+                    padding_top=5,
+                ),
+                col_span=6,
+            )
+        )
+        table_001.add(
+            TableCell(Paragraph(f"$ {subtotal}", font_size=8,
+                                padding_top=5, horizontal_alignment=Alignment.LEFT))
+        )
 
     for _ in range(0, 7):
         table_001.add(TableCell(Paragraph(" ")))
@@ -342,8 +407,9 @@ def _build_itemized_description_table(invoices):
 
 def _build_itemized_detail_description_table(user, data):
     invoice = models.ModelsInvoice.objects.get(
-        id=data["id"],
+        id=data["invoice_id"],
     )
+    tax = data['tax']
     task_list = invoice.tasks.all()
     car = invoice.car_id
     crew = invoice.crew_id
@@ -434,21 +500,40 @@ def _build_itemized_detail_description_table(user, data):
     table_001.add(Paragraph(" "))
 
     table_004 = FixedColumnWidthTable(number_of_rows=3, number_of_columns=3)
-    table_004.add(Paragraph("Sub Total:", font="Helvetica-Bold", font_size=8,
-                            horizontal_alignment=Alignment.RIGHT, ))
-    table_004.add(Paragraph(" "))
-    table_004.add(Paragraph(f"${invoice.total_sum}", font="Helvetica", font_size=8,
-                            horizontal_alignment=Alignment.LEFT, ))
-    table_004.add(Paragraph("HST:", font="Helvetica-Bold", font_size=8,
-                            horizontal_alignment=Alignment.RIGHT, ))
-    table_004.add(Paragraph(" "))
-    table_004.add(Paragraph("$15.60", font="Helvetica", font_size=8,
-                            horizontal_alignment=Alignment.LEFT, ))
-    table_004.add(Paragraph("Total:", font="Helvetica-Bold", font_size=8,
-                            horizontal_alignment=Alignment.RIGHT, ))
-    table_004.add(Paragraph(" "))
-    table_004.add(Paragraph(f"${invoice.total_sum}", font="Helvetica-Bold", font_size=8,
-                            horizontal_alignment=Alignment.LEFT, ))
+    if tax:
+
+        hst: float = (invoice.total_sum * 13) / 100
+        table_004.add(Paragraph("Sub Total:", font="Helvetica-Bold", font_size=8,
+                                horizontal_alignment=Alignment.RIGHT, ))
+        table_004.add(Paragraph(" "))
+        table_004.add(Paragraph(f"${invoice.total_sum}", font="Helvetica", font_size=8,
+                                horizontal_alignment=Alignment.LEFT, ))
+        table_004.add(Paragraph("HST:", font="Helvetica-Bold", font_size=8,
+                                horizontal_alignment=Alignment.RIGHT, ))
+        table_004.add(Paragraph(" "))
+        table_004.add(Paragraph(f"${hst}", font="Helvetica", font_size=8,
+                                horizontal_alignment=Alignment.LEFT, ))
+        table_004.add(Paragraph("Total:", font="Helvetica-Bold", font_size=8,
+                                horizontal_alignment=Alignment.RIGHT, ))
+        table_004.add(Paragraph(" "))
+        table_004.add(Paragraph(f"${invoice.total_sum + hst}", font="Helvetica-Bold", font_size=8,
+                                horizontal_alignment=Alignment.LEFT, ))
+    else:
+        table_004.add(Paragraph("Total:", font="Helvetica-Bold", font_size=8,
+                                horizontal_alignment=Alignment.RIGHT, ))
+        table_004.add(Paragraph(" "))
+        table_004.add(Paragraph(f"${invoice.total_sum}", font="Helvetica", font_size=8,
+                                horizontal_alignment=Alignment.LEFT, ))
+
+        table_004.add(Paragraph(" "))
+        table_004.add(Paragraph(" "))
+        table_004.add(Paragraph(" "))
+
+        table_004.add(Paragraph(" "))
+        table_004.add(Paragraph(" "))
+        table_004.add(Paragraph(" "))
+
+
     table_001.set_padding_on_all_cells(Decimal(0), Decimal(0), Decimal(0), Decimal(0))
     table_004.no_borders()
     table_001.add(table_004)
@@ -473,7 +558,7 @@ def generate_pdf_for_detailed_invoice(user, data):
     page_layout.vertical_margin = page.get_page_info().get_height() * Decimal(0.02)
 
     # Invoice information table
-    page_layout.add(_build_invoice_information_head(user, data))
+    page_layout.add(_build_invoice_information_head_detail(user, data))
     # page_layout.add(_build_invoice_information())
     page_layout.add(_build_invoice_detail_information(user, data))
 
@@ -504,13 +589,15 @@ def generate_pdf_list_invoice(user, data):
         tz = timezone('UTC')
         start_date = datetime.strptime(data['start_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
         end_date = datetime.strptime(data['end_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
-
+        tax = data['tax']
         invoices = models.ModelsInvoice.objects.filter(
             crew_id__account_id=user.account_id,
             customer_id_id=data['customer_id'],
             finished_at__range=(start_date, end_date)
         )
+
     except:
+
         return Response({
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
@@ -539,7 +626,7 @@ def generate_pdf_list_invoice(user, data):
 
     # Itemized description
     page_layout.add(
-        _build_itemized_description_table(invoices)
+        _build_itemized_description_table(tax, invoices)
     )
 
     PDF.dumps(si, pdf)

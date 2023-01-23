@@ -15,7 +15,7 @@ class ViewGetInvoice(APIView):
         return get_invoice(request)
 
 
-class InvoiceExport(APIView):
+class InvoiceListExport(APIView):
 
     def post(self, request):
         try:
@@ -23,6 +23,24 @@ class InvoiceExport(APIView):
             action_name = data['action']
             actions = {
                 'export': generate_pdf_list_invoice,
+            }
+            action = actions[action_name]
+            return action(request)
+        except BaseException as ex:
+            print(ex)
+            return Response({
+                'success': False,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class InvoiceExport(APIView):
+
+    def post(self, request):
+        try:
+            data = extract_request_data(request)
+            action_name = data['action']
+            actions = {
+                'export': generate_pdf_for_detailed_invoice,
             }
             action = actions[action_name]
             return action(request)
