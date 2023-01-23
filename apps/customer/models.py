@@ -9,7 +9,6 @@ class ModelsCustomer(models.Model):
     account = models.ForeignKey(ModelsAccount, on_delete=models.CASCADE, null=True, blank=True)
     email = models.CharField(max_length=122)
     full_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
     street1 = models.CharField(max_length=122, blank=True)
     street2 = models.CharField(max_length=255, null=False)
     country = models.CharField(max_length=255, null=False)
