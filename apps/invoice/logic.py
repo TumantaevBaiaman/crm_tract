@@ -1,3 +1,5 @@
+import csv
+
 from django.conf import settings
 from pytz import timezone
 from rest_framework import status
@@ -26,6 +28,23 @@ from . import models
 from .serializers import SerializerInvoice
 from ..account.models import ModelsAccount
 from ..users.logic.logic import check_auth
+
+
+def query_invoice(user, data):
+    try:
+        tz = timezone('UTC')
+        start_date = datetime.strptime(data['start_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+        end_date = datetime.strptime(data['end_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+        invoices = models.ModelsInvoice.objects.filter(
+            crew_id__account_id=user.account_id,
+            finished_at__range=(start_date, end_date)
+        )
+        return invoices
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 def extract_request_data(request):
@@ -597,7 +616,6 @@ def generate_pdf_list_invoice(user, data):
         )
 
     except:
-
         return Response({
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
@@ -638,6 +656,66 @@ def generate_pdf_list_invoice(user, data):
     response.headers["Content-type"] = "application/pdf"
     si.close()
 
+    return response
+
+
+@check_auth('admin')
+def export_invoices_csv(user, data):
+    invoices = query_invoice(user, data)
+    filename = f'Invoices_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
+    output = io.StringIO()
+    format_file = 'csv'
+    csv_writer = csv.writer(output, delimiter=',')
+    headers = [
+        'InvoiceNO',
+        'Customer',
+        'InvoiceDate',
+        'DueDate',
+        'Item(Product/Service)',
+        'ItemQuantity',
+        'ItemRate',
+        'ItemAmount',
+        'ItemTaxCode',
+        'ItemTaxAmount',
+    ]
+    data_csv = [headers]
+    for inv in invoices:
+        customer = inv.customer_id.full_name
+        start_date = inv.start_at
+        finished_date = inv.finished_at
+
+        for i, task in enumerate(inv.tasks.all()):
+            if i != 0:
+                customer = ""
+                start_date = ""
+                finished_date = ""
+            data_csv.append(
+                [
+                    inv.number,
+                    customer,
+                    start_date,
+                    finished_date,
+                    task.work,
+                    "1",
+                    task.payment,
+                    task.payment,
+                    "HST",
+                    str((task.payment*13)/100)
+                ]
+            )
+    csv_writer.writerows(data_csv)
+    output.seek(0)
+    """
+    response = HttpResponse(si.read(), content_type=('application/pdf'))
+    name = f'Invoice_statement_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
+    response.headers['Content-Disposition'] = f"attachment; filename={name}"
+    response.headers["Content-type"] = "application/pdf"
+    si.close()
+    """
+    response = HttpResponse(output.read(), content_type=('text/csv'))
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}.{format_file}"'
+    response.headers["Content-type"] = "text/csv"
+    output.close()
     return response
 
 
