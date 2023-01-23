@@ -10,7 +10,10 @@ class ModelsCustomer(models.Model):
     email = models.CharField(max_length=122)
     full_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    address = models.CharField(max_length=122, blank=True)
+    street1 = models.CharField(max_length=122, blank=True)
+    street2 = models.CharField(max_length=255, null=False)
+    country = models.CharField(max_length=255, null=False)
+    phone = models.CharField(max_length=255, null=False)
     create_at = models.DateTimeField(auto_now_add=True)
     deleted = models.BooleanField(default=False)
 

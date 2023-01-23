@@ -26,7 +26,6 @@ def extract_request_data_task(request):
 def create_task(user, data):
     try:
         car = ModelsCars.objects.get(id=data['car_id'])
-        print('hello')
     except:
         return Response({
             'success': False,
@@ -143,5 +142,11 @@ def update_tasks(user, data):
         return Response({
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@check_auth()
+def export_task(profile, data):
+    pass
+
 
 
