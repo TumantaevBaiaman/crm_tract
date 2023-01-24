@@ -1,12 +1,17 @@
 import csv
-
+import json
+from urllib.parse import urlencode
 from django.conf import settings
+from django.db.models import Sum
 from pytz import timezone
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
 from rest_framework.response import Response
 import os
 from datetime import datetime
 from django.core.files.storage import default_storage
+from django.http.request import QueryDict
 from django.http import HttpResponse
 from borb.pdf import Document
 from borb.pdf import Page
@@ -80,6 +85,85 @@ def get_invoice(user, data):
             'account': SerializerAccount(account).data,
             'invoice': SerializerInvoice(invoices, many=True).data,
         }, status=status.HTTP_200_OK)
+
+
+def get_filter_invoice(request):
+    data = extract_request_data(request)
+    tz = timezone('UTC')
+    # start_date = datetime.strptime(data['start_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+    # end_date = datetime.strptime(data['end_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+    crew_id = data['crew_id'] if data['crew_id'] else None
+    car_id = data['car_id'] if data['car_id'] else None
+    customer_id = data['customer_id'] if data['customer_id'] else None
+    number = data['number'] if data['number'] else None
+    finished_at = data['finished_at'] if data['finished_at'] else None
+    start_at = data['start_at'] if data['start_at'] else None
+    page = data["page"] if data['page'] else 1
+    page_size = data["page_size"] if data['page_size'] else 10
+
+    invoices = models.ModelsInvoice.objects.all()
+
+    if number is not None:
+        invoices = invoices.filter(number=number)
+    if crew_id is not None:
+        invoices = invoices.filter(crew_id=crew_id)
+    if car_id is not None:
+        invoices = invoices.filter(car_id=car_id)
+    if customer_id is not None:
+        invoices = invoices.filter(customer_id=customer_id)
+    if finished_at is not None and start_at is None:
+        invoices = invoices.filter(
+            finished_at__range=(
+                datetime.strptime(data['finished_at']+' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
+                datetime.strptime(data['finished_at']+' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+
+            )
+        )
+    if start_at is not None and finished_at is None:
+        invoices = invoices.filter(
+            start_at__range=(
+                datetime.strptime(data['start_at'] + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
+                datetime.strptime(data['start_at'] + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+            )
+        )
+
+
+    paginator = PageNumberPagination()
+    paginator.page = page
+    paginator.page_size = page_size
+    result_page = paginator.paginate_queryset(invoices, request=request)
+    pk_list = [invoice.pk for invoice in result_page]
+    serializer = SerializerInvoice(result_page, many=True)
+    total_sum = models.ModelsInvoice.objects.filter(
+        pk__in=pk_list
+    ).aggregate(Sum('total_sum'))
+    print(total_sum)
+    data_ = serializer.data
+    data_.append({'all_total_sum': total_sum['total_sum__sum']})
+    return paginator.get_paginated_response(data_)
+
+
+@check_auth('employee')
+def update_status_inv(user, data):
+    try:
+        id = data['id']
+        invoice = models.ModelsInvoice.objects.get(id=id)
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_404_NOT_FOUND)
+    try:
+        invoice.status = data['status']
+        invoice.finished_at = datetime.now()
+        invoice.save()
+        return Response({
+            'success': True,
+            'car': SerializerInvoice(invoice).data,
+        }, status=status.HTTP_200_OK)
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 def _build_invoice_information_head_detail(user, data):
