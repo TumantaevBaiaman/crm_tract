@@ -193,6 +193,7 @@ def create_account(user, data):
         return Response({
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
+
     if ModelsAccount.objects.filter(name=name):
         return Response({
             'success': False,
@@ -201,13 +202,14 @@ def create_account(user, data):
     else:
         serializer = SerializerAccount(data=data)
         if serializer.is_valid():
-            account = ModelsAccount.objects.create(name=name)
+            serializer.save()
+            account = serializer.instance
         else:
             return Response({
                 'success': False,
                 'errors': serialize_errors(serializer.errors)
             }, status=status.HTTP_400_BAD_REQUEST)
-    account.save()
+    # account.save()
     status_name = ModelsSatus.objects.get(name='admin')
     user.account_id = account
     user.status_id = status_name
@@ -237,6 +239,7 @@ def get_status_list(user, data):
         'success': True,
         'users': SerializerSatus(statuses, many=True).data,
     }, status=status.HTTP_200_OK)
+
 
 @check_auth()
 def get_profile(user, data):
