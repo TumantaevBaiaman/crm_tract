@@ -27,6 +27,7 @@ from PIL import Image as IM
 from . import models
 from .serializers import SerializerInvoice
 from ..account.models import ModelsAccount
+from ..account.serializers import SerializerAccount
 from ..users.logic.logic import check_auth
 
 
@@ -65,15 +66,19 @@ def get_invoice(user, data):
         invoice = models.ModelsInvoice.objects.get(
             id=data["id"],
         )
+        account = invoice.crew_id.account_id
         return Response({
             'success': True,
+            'account': SerializerAccount(account).data,
             'invoice': SerializerInvoice(invoice).data,
         }, status=status.HTTP_200_OK)
     else:
-        invoice = models.ModelsInvoice.objects.filter(crew_id=user)
+        invoices = models.ModelsInvoice.objects.filter(crew_id=user)
+        account = user.account_id
         return Response({
             'success': True,
-            'invoice': SerializerInvoice(invoice, many=True).data,
+            'account': SerializerAccount(account).data,
+            'invoice': SerializerInvoice(invoices, many=True).data,
         }, status=status.HTTP_200_OK)
 
 
