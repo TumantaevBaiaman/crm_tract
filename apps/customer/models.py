@@ -13,6 +13,8 @@ class ModelsCustomer(models.Model):
     street2 = models.CharField(max_length=255, null=False)
     country = models.CharField(max_length=255, null=False)
     phone = models.CharField(max_length=255, null=False)
+    phone2 = models.CharField(max_length=255, null=True, blank=True)
+    postal_code = models.CharField(max_length=255, null=False)
     create_at = models.DateTimeField(auto_now_add=True)
     deleted = models.BooleanField(default=False)
 

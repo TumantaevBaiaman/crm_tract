@@ -32,8 +32,12 @@ def create_customer(user, data):
                 account=user.account_id,
                 email=data['email'],
                 full_name=data['full_name'],
-                last_name=data['last_name'],
-                address=data['address']
+                street1=data['street1'],
+                street2=data['province'],
+                country=data['city'],
+                phone=data['phone'],
+                phone2=data['phone2'],
+                postal_code=data['postal_code']
             )
             customer.save()
             return Response({
