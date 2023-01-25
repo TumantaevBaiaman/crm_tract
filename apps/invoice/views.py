@@ -2,8 +2,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.invoice.logic import get_invoice, extract_request_data, generate_pdf_list_invoice, \
-    generate_pdf_for_detailed_invoice, export_invoices_csv
+from apps.invoice.logic import (
+    get_invoice, extract_request_data,
+    generate_pdf_list_invoice,
+    generate_pdf_for_detailed_invoice,
+    export_invoices_csv, update_status_inv,
+    get_filter_invoice
+)
 
 
 class ViewGetInvoice(APIView):
@@ -68,3 +73,14 @@ class InvoiceExportCSV(APIView):
                 'success': False,
             }, status=status.HTTP_400_BAD_REQUEST)
 
+
+class ViewStatusInvoice(APIView):
+
+    def post(self, request):
+        return update_status_inv(request)
+
+
+class InvoiceFilterView(APIView):
+
+    def post(self, request):
+        return get_filter_invoice(request)
