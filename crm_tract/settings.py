@@ -140,8 +140,8 @@ USE_TZ = True
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'dinstamaly@gmail.com'
-EMAIL_HOST_PASSWORD = 'rhrcmbpqadfmppxf'
+EMAIL_HOST_USER = 'chikuplusdin@gmail.com'
+EMAIL_HOST_PASSWORD = 'seipwjyzdobeisxs'
 
 
 # Static files (CSS, JavaScript, Images)
@@ -164,6 +164,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 2,
 }
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=60),
