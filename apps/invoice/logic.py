@@ -41,6 +41,13 @@ from ..account.serializers import SerializerAccount
 from ..users.logic.logic import check_auth
 
 
+class DateEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        return json.JSONEncoder.default(self, obj)
+
+
 def query_invoice(user, data):
     try:
         tz = timezone('UTC')
@@ -135,7 +142,9 @@ def get_filter_invoice(request):
     invoices_data = invoices.values('customer_id').annotate(
         name=F('customer_id__full_name'),
         invoices=Value(
-            json.dumps(list(invoices.values()), cls=DjangoJSONEncoder),
+            json.dumps(list(
+                invoices.values('id', 'number', 'po', 'crew_id__username', 'car_id_id', 'customer_id_id', 'status',
+                                'description', 'total_sum', 'start_at', 'finished_at')), cls=DateEncoder),
             output_field=md.JSONField()
         ),
         total_sum=Sum('total_sum')
