@@ -102,78 +102,80 @@ def get_invoice(user, data):
 def get_filter_invoice(request):
     data = extract_request_data(request)
     tz = timezone('UTC')
-    # start_date = datetime.strptime(data['start_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
-    # end_date = datetime.strptime(data['end_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
-    crew_id = data['crew_id'] if data['crew_id'] else None
-    car_id = data['car_id'] if data['car_id'] else None
-    customer_id = data['customer_id'] if data['customer_id'] else None
-    number = data['number'] if data['number'] else None
-    finished_at = data['finished_at'] if data['finished_at'] else None
-    start_at = data['start_at'] if data['start_at'] else None
-    page = data["page"] if data['page'] else 1
-    page_size = data["page_size"] if data['page_size'] else 10
+    try:
 
-    invoices = models.ModelsInvoice.objects.all()
+        from_date = data['from_date']
+        to_date = data['to_date']
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        crew_id = data['crew_id'] if data['crew_id'] else None
+        car_id = data['car_id'] if data['car_id'] else None
+        customer_id = data['customer_id'] if data['customer_id'] else None
+        number = data['number'] if data['number'] else None
+        finished_at = data['finished_at'] if data['finished_at'] else None
+        start_at = data['start_at'] if data['start_at'] else None
+        page = data["page"] if data['page'] else 1
+        page_size = data["page_size"] if data['page_size'] else 10
 
-    if number is not None:
-        invoices = invoices.filter(number=number)
-    if crew_id is not None:
-        invoices = invoices.filter(crew_id=crew_id)
-    if car_id is not None:
-        invoices = invoices.filter(car_id=car_id)
-    if customer_id is not None:
-        invoices = invoices.filter(customer_id=customer_id)
-    if finished_at is not None and start_at is None:
+        invoices = models.ModelsInvoice.objects.all()
         invoices = invoices.filter(
             finished_at__range=(
-                datetime.strptime(data['finished_at']+' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
-                datetime.strptime(data['finished_at']+' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+                datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
+                datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
 
             )
         )
-    if start_at is not None and finished_at is None:
-        invoices = invoices.filter(
-            start_at__range=(
-                datetime.strptime(data['start_at'] + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
-                datetime.strptime(data['start_at'] + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
-            )
-        )
-    # )
-    invoices_data = invoices.values('customer_id').annotate(
-        name=F('customer_id__full_name'),
-        invoices=Value(
-            json.dumps(list(
-                invoices.values('id', 'number', 'po', 'crew_id__username', 'car_id_id', 'customer_id_id', 'status',
-                                'description', 'total_sum', 'start_at', 'finished_at')), cls=DateEncoder),
-            output_field=md.JSONField()
-        ),
-        total_sum=Sum('total_sum')
-    )
 
-    paginator = PageNumberPagination()
-    paginator.page = page
-    paginator.page_size = page_size
-    paginated_data = paginator.paginate_queryset(invoices_data, request)
-    total_sum = invoices.aggregate(Sum('total_sum'))
-    response = paginator.get_paginated_response(paginated_data)
-    response.data['Page_total_sum'] = total_sum
-    # print(response.data)
-    # response_data = response.data['results']
-    # for item in response_data:
-    #     invoices_json = json.loads(item['invoices'])
-    #     item['invoices'] = invoices_json
-    return response
-    # result_page = paginator.paginate_queryset(invoices, request=request)
-    # pk_list = [invoices.pk for invoices in result_page]
-    # serializer = SerializerInvoice(result_page, many=True)
-    # total_sum = models.ModelsInvoice.objects.filter(
-    #     pk__in=pk_list
-    # ).aggregate(Sum('total_sum'))
-    # print(total_sum)
-    # data_ = serializer.data
-    # data_.append({'all_total_sum': total_sum['total_sum__sum']})
-    # total_sum_current_page = page.aggregate(Sum('total_sum'))['total_sum__sum']
-    # return paginator.get_paginated_response(invoices_data)
+        if number is not None:
+            invoices = invoices.filter(number=number)
+        if crew_id is not None:
+            invoices = invoices.filter(crew_id=crew_id)
+        if car_id is not None:
+            invoices = invoices.filter(car_id=car_id)
+        if customer_id is not None:
+            invoices = invoices.filter(customer_id=customer_id)
+        if finished_at is not None and start_at is None:
+            invoices = invoices.filter(
+                finished_at__range=(
+                    datetime.strptime(data['finished_at']+' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
+                    datetime.strptime(data['finished_at']+' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+
+                )
+            )
+        if start_at is not None and finished_at is None:
+            invoices = invoices.filter(
+                start_at__range=(
+                    datetime.strptime(data['start_at'] + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
+                    datetime.strptime(data['start_at'] + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+                )
+            )
+        # )
+        invoices_data = invoices.values('customer_id').annotate(
+            name=F('customer_id__full_name'),
+            invoices=Value(
+                json.dumps(list(
+                    invoices.values('id', 'number', 'po', 'crew_id__username', 'car_id_id', 'customer_id_id', 'status',
+                                    'description', 'total_sum', 'start_at', 'finished_at')), cls=DateEncoder),
+                output_field=md.JSONField()
+            ),
+            total_sum=Sum('total_sum')
+        )
+
+        paginator = PageNumberPagination()
+        paginator.page = page
+        paginator.page_size = page_size
+        paginated_data = paginator.paginate_queryset(invoices_data, request)
+        total_sum = invoices.aggregate(Sum('total_sum'))
+        response = paginator.get_paginated_response(paginated_data)
+        response.data['Page_total_sum'] = total_sum
+        return response
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 @check_auth('employee')
@@ -827,13 +829,6 @@ def export_invoices_csv(user, data):
             )
     csv_writer.writerows(data_csv)
     output.seek(0)
-    """
-    response = HttpResponse(si.read(), content_type=('application/pdf'))
-    name = f'Invoice_statement_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
-    response.headers['Content-Disposition'] = f"attachment; filename={name}"
-    response.headers["Content-type"] = "application/pdf"
-    si.close()
-    """
     response = HttpResponse(output.read(), content_type=('text/csv'))
     response.headers['Content-Disposition'] = f'attachment; filename="{filename}.{format_file}"'
     response.headers["Content-type"] = "text/csv"
