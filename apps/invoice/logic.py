@@ -1,8 +1,13 @@
 import csv
 import json
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.contrib.postgres.fields import ArrayField
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import F, Value
 from urllib.parse import urlencode
 from django.conf import settings
 from django.db.models import Sum
+import  django.db.models as md
 from pytz import timezone
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
@@ -29,7 +34,7 @@ import io
 from pathlib import Path
 from PIL import Image as IM
 
-from . import models
+from . import models as models
 from .serializers import SerializerInvoice
 from ..account.models import ModelsAccount
 from ..account.serializers import SerializerAccount
@@ -126,21 +131,40 @@ def get_filter_invoice(request):
                 datetime.strptime(data['start_at'] + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
             )
         )
-
+    # )
+    invoices_data = invoices.values('customer_id').annotate(
+        name=F('customer_id__full_name'),
+        invoices=Value(
+            json.dumps(list(invoices.values()), cls=DjangoJSONEncoder),
+            output_field=md.JSONField()
+        ),
+        total_sum=Sum('total_sum')
+    )
 
     paginator = PageNumberPagination()
     paginator.page = page
     paginator.page_size = page_size
-    result_page = paginator.paginate_queryset(invoices, request=request)
-    pk_list = [invoice.pk for invoice in result_page]
-    serializer = SerializerInvoice(result_page, many=True)
-    total_sum = models.ModelsInvoice.objects.filter(
-        pk__in=pk_list
-    ).aggregate(Sum('total_sum'))
-    print(total_sum)
-    data_ = serializer.data
-    data_.append({'all_total_sum': total_sum['total_sum__sum']})
-    return paginator.get_paginated_response(data_)
+    paginated_data = paginator.paginate_queryset(invoices_data, request)
+    total_sum = invoices.aggregate(Sum('total_sum'))
+    response = paginator.get_paginated_response(paginated_data)
+    response.data['Page_total_sum'] = total_sum
+    # print(response.data)
+    # response_data = response.data['results']
+    # for item in response_data:
+    #     invoices_json = json.loads(item['invoices'])
+    #     item['invoices'] = invoices_json
+    return response
+    # result_page = paginator.paginate_queryset(invoices, request=request)
+    # pk_list = [invoices.pk for invoices in result_page]
+    # serializer = SerializerInvoice(result_page, many=True)
+    # total_sum = models.ModelsInvoice.objects.filter(
+    #     pk__in=pk_list
+    # ).aggregate(Sum('total_sum'))
+    # print(total_sum)
+    # data_ = serializer.data
+    # data_.append({'all_total_sum': total_sum['total_sum__sum']})
+    # total_sum_current_page = page.aggregate(Sum('total_sum'))['total_sum__sum']
+    # return paginator.get_paginated_response(invoices_data)
 
 
 @check_auth('employee')

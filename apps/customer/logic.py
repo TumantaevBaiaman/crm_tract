@@ -33,8 +33,8 @@ def create_customer(user, data):
                 email=data['email'],
                 full_name=data['full_name'],
                 street1=data['street1'],
-                street2=data['province'],
-                country=data['city'],
+                street2=data['street2'],
+                country=data['country'],
                 phone=data['phone'],
                 phone2=data['phone2'],
                 postal_code=data['postal_code']
