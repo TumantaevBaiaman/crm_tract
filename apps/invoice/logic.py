@@ -40,7 +40,7 @@ from .serializers import SerializerInvoice
 from ..account.models import ModelsAccount
 from ..account.serializers import SerializerAccount
 from ..customer.models import ModelsCustomer
-from ..users.logic.logic import check_auth
+from ..users.logic.logic import check_auth, send_email_with_pdf_attachment
 from ..users.models import ModelsUser
 
 
@@ -324,28 +324,28 @@ def _build_invoice_information_head_detail(user, data):
 
 def _build_invoice_information_head(user, data):
     invoice = data.first()
+
     crew = invoice.crew_id
     account = ModelsAccount.objects.get(id=crew.account_id.id)
     url = account.logo.url.replace('/media/', '')
 
     image_path = os.path.join(settings.MEDIA_ROOT, url)
+
     with default_storage.open(image_path, 'rb') as f:
         img = IM.open(f)
         width, height = img.size
+    max_size = (128, 128)
     if width > height:
-        w = 128
-        h = 80
-    elif width < height:
-        w = 80
-        h = 128
+        height = int((max_size[0] / width) * height)
+        width = max_size[0]
     else:
-        w = 128
-        h = 128
+        width = int((max_size[1] / height) * width)
+        height = max_size[1]
     image: LayoutElement = Image(
         Path(image_path),
-        width=Decimal(w),
-        height=Decimal(h),
-        horizontal_alignment=Alignment.LEFT
+        width=Decimal(width),
+        height=Decimal(height),
+        vertical_alignment=Alignment.MIDDLE
     )
     table_001 = FixedColumnWidthTable(number_of_columns=3, number_of_rows=4)
     table_001.add(Paragraph(" "))
@@ -781,13 +781,21 @@ def generate_pdf_for_detailed_invoice(user, data):
     )
     PDF.dumps(si, pdf)
     si.seek(0)
+    invoice = models.ModelsInvoice.objects.get(
+        id=data["invoice_id"],
+    )
 
-    response = HttpResponse(si.read(), content_type=('application/pdf'))
-    name = f'Invoice_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
-    response.headers['Content-Disposition'] = f"attachment; filename={name}"
-    response.headers["Content-type"] = "application/pdf"
-    si.close()
-    return response
+    filename = f'Invoice_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
+    if data['send']:
+        customer = invoice.customer_id
+        send_email_with_pdf_attachment(si, user, customer, filename, 'Invoice')
+        return Response({'message': 'Email sent successfully'})
+    else:
+        response = HttpResponse(si.read(), content_type=('application/pdf'))
+        response.headers['Content-Disposition'] = f"attachment; filename={filename}"
+        response.headers["Content-type"] = "application/pdf"
+        si.close()
+        return response
 
 
 @check_auth('default')
@@ -834,17 +842,22 @@ def generate_pdf_list_invoice(user, data):
     page_layout.add(
         _build_itemized_description_table(tax, invoices)
     )
-
     PDF.dumps(si, pdf)
     si.seek(0)
 
-    response = HttpResponse(si.read(), content_type=('application/pdf'))
-    name = f'Invoice_statement_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
-    response.headers['Content-Disposition'] = f"attachment; filename={name}"
-    response.headers["Content-type"] = "application/pdf"
-    si.close()
+    filename = f'Invoice_statement_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
 
-    return response
+    if data['send']:
+        customer = invoices.first().customer_id.full_name
+        send_email_with_pdf_attachment(si, user, customer, filename, 'Invoice Statement')
+        return Response({'message': 'Email sent successfully'})
+    else:
+        response = HttpResponse(si.read(), content_type=('application/pdf'))
+        response.headers['Content-Disposition'] = f"attachment; filename={filename}"
+        response.headers["Content-type"] = "application/pdf"
+        si.close()
+
+        return response
 
 
 @check_auth('admin')

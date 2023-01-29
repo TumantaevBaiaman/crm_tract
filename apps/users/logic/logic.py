@@ -1,14 +1,41 @@
+import re
+from django.core.mail import EmailMessage
 from rest_framework import status
 from rest_framework.response import Response
 import random
 import string
 
 from apps.account.serializers import SerializerAccount
+from apps.customer.models import ModelsCustomer
 from apps.users.models import ModelsUser, ModelsSatus
 from apps.account.models import ModelsAccount
 from apps.users.serializers import SignUpSerializer, serialize_errors, SerializerUser, SerializerSatus
 from django.conf import settings
 from django.core.mail import send_mail
+
+
+def send_email_with_pdf_attachment(file, user, customer, filename, subject):
+    customer_emails = customer.email
+    text = re.sub(r'\s+', '', customer_emails.strip())
+    send_to = text.split(",")
+    from_to = ModelsAccount.objects.get(id=user.account_id_id).email
+    text = f"""
+Dear {customer.full_name},
+Here's your {subject}, We appreciate your prompt payment Thanks tor your business,
+To view and print the attached invoice, double-click on the invoice icon, and then choose File, Print when the invoice displayed. To save the invoice, copy it from this e-mail to another folder on your computer.
+If you have any questions regarding this invoice, please contact Accountng at {ModelsAccount.objects.get(id=user.account_id_id).phone} or by email: {from_to} 
+Note: You require Adobe Acrobat Reader to view this attachment. Adobe Acrobat Reader is available frornhltp://www.adobe.com.
+Regards, 
+Accounting Department, {ModelsAccount.objects.get(id=user.account_id_id).name}
+    """
+    email = EmailMessage(
+        subject,
+        text,
+        from_to,
+        send_to
+    )
+    email.attach(filename, file.getvalue(), 'application/pdf')
+    email.send()
 
 
 def extract_request_data(request):
@@ -38,7 +65,6 @@ def check_auth(access_status=None):
             else:
                 pass
             status_list = ('employee', 'admin')
-            print(user)
             if status_model == status_list[-1]:
                 return original_function(user, data)
             elif access_status in status_list and user:
