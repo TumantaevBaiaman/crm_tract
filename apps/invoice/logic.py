@@ -273,25 +273,24 @@ def _build_invoice_information_head_detail(user, data):
     crew = invoice.crew_id
     account = ModelsAccount.objects.get(id=crew.account_id.id)
     url = account.logo.url.replace('/media/', '')
-
+    #
     image_path = os.path.join(settings.MEDIA_ROOT, url)
     with default_storage.open(image_path, 'rb') as f:
         img = IM.open(f)
         width, height = img.size
+    max_size = (128, 128)
     if width > height:
-        w = 128
-        h = 80
-    elif width < height:
-        w = 80
-        h = 128
+        height = int((max_size[0] / width) * height)
+        width = max_size[0]
     else:
-        w = 128
-        h = 128
+        width = int((max_size[1] / height) * width)
+        height = max_size[1]
+
     image: LayoutElement = Image(
         Path(image_path),
-        width=Decimal(w),
-        height=Decimal(h),
-        horizontal_alignment=Alignment.LEFT
+        width=Decimal(width),
+        height=Decimal(height),
+        vertical_alignment=Alignment.MIDDLE
     )
     table_001 = FixedColumnWidthTable(number_of_columns=3, number_of_rows=4)
     table_001.add(Paragraph(" "))
