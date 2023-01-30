@@ -7,7 +7,7 @@ from apps.users.models import ModelsUser
 class ModelsCustomer(models.Model):
     user = models.ForeignKey(ModelsUser, on_delete=models.SET_NULL, null=True, blank=True)
     account = models.ForeignKey(ModelsAccount, on_delete=models.CASCADE, null=True, blank=True)
-    email = models.CharField(max_length=122)
+    email = models.TextField(max_length=122)
     full_name = models.CharField(max_length=50)
     street1 = models.CharField(max_length=122, blank=True)
     street2 = models.CharField(max_length=255, null=False)

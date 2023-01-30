@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.response import Response
-
+import re
 from . import models, serializers
 from ..cars.models import ModelsCars
 from ..cars.serializers import SerializerCar
@@ -25,12 +25,15 @@ def extract_request_data(request):
 @check_auth('employee')
 def create_customer(user, data):
     try:
+        emails = data['email']
+        text = re.sub(r'\s+', '', emails.strip())
+        list_emails = text.split(",")
         serializer = serializers.SerializerCustomer(data=data)
         if serializer.is_valid():
             customer = models.ModelsCustomer.objects.create(
                 user_id=user.id,
                 account=user.account_id,
-                email=data['email'],
+                email=list_emails,
                 full_name=data['full_name'],
                 street1=data['street1'],
                 street2=data['street2'],

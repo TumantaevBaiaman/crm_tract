@@ -1,3 +1,8 @@
+from io import BytesIO
+from os import SEEK_END
+
+from PIL import Image
+from django.core.files.base import ContentFile
 from django.db import models
 
 
