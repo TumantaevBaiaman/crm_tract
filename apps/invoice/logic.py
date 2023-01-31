@@ -1,23 +1,14 @@
 import csv
 import json
-from django.contrib.postgres.aggregates import ArrayAgg
-from django.contrib.postgres.fields import ArrayField
-from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import F, Value, Count, IntegerField, DecimalField, OuterRef, Subquery
-from urllib.parse import urlencode
+from django.db.models import IntegerField, DecimalField, Count
 from django.conf import settings
 from django.db.models import Sum
-import  django.db.models as md
-from django.db.models.functions import Concat
 from pytz import timezone
 from rest_framework import status
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.request import Request
 from rest_framework.response import Response
 import os
 from datetime import datetime
 from django.core.files.storage import default_storage
-from django.http.request import QueryDict
 from django.http import HttpResponse
 from borb.pdf import Document
 from borb.pdf import Page
@@ -243,6 +234,85 @@ def get_crew_report(user, data):
         }, status=status.HTTP_200_OK)
 
 
+@check_auth()
+def get_my_day(user, data):
+    try:
+        tz = timezone('UTC')
+        from_date = data['from_date']
+        to_date = data['to_date']
+        user_status = str(user.status)
+        invoices = models.ModelsInvoice.objects.filter(
+            finished_at__range=(
+                datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
+                datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+            )
+        )
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_404_NOT_FOUND)
+    try:
+        if user_status == 'admin':
+            if data['crew_id']:
+                invoices = invoices.filter(crew_id_id=data['crew_id'])
+            else:
+                invoices = invoices.filter(crew_id=user)
+        else:
+            invoices = invoices.filter(crew_id=user)
+
+        if data['customer_id']:
+            invoices = invoices.filter(customer_id_id=data['customer_id'])
+
+        total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
+        gross = (total_sum_all_invoices*13)/100 + total_sum_all_invoices
+        return Response({
+            'success': True,
+            'total_invoice_sum': total_sum_all_invoices,
+            'gross': gross,
+            'invoices': SerializerInvoice(invoices, many=True).data,
+        }, status=status.HTTP_200_OK)
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@check_auth('admin')
+def get_tax(user, data):
+    try:
+        tz = timezone('UTC')
+        from_date = data['from_date']
+        to_date = data['to_date']
+        invoices = models.ModelsInvoice.objects.filter(
+            crew_id__account_id=user.account_id,
+            finished_at__range=(
+                datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
+                datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
+            )
+        )
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_404_NOT_FOUND)
+    try:
+        total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
+        gross = (total_sum_all_invoices*13)/100 + total_sum_all_invoices
+        tax = (total_sum_all_invoices*13)/100
+        invoices_count = invoices.count()
+        return Response({
+            'success': True,
+            'name': 'HST',
+            'rate': 13,
+            'subtotal': total_sum_all_invoices,
+            'gross': gross,
+            'invoices_count': invoices_count,
+            'tax': tax
+        }, status=status.HTTP_200_OK)
+    except:
+        return Response({
+            'success': False,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 @check_auth('employee')
 def update_status_inv(user, data):
     try:
@@ -258,7 +328,7 @@ def update_status_inv(user, data):
         invoice.save()
         return Response({
             'success': True,
-            'car': SerializerInvoice(invoice).data,
+            'invoices': SerializerInvoice(invoice).data,
         }, status=status.HTTP_200_OK)
     except:
         return Response({

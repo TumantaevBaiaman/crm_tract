@@ -11,4 +11,6 @@ urlpatterns = [
     path('export-filter/', views.InvoiceFilterView.as_view(), name='invoice-filter'),
     path('export-report-customer/', views.InvoiceCustomerReportView.as_view(), name='customer-report'),
     path('export-report-crew/', views.InvoiceCrewReportView.as_view(), name='crew-report'),
+    path('my-day/', views.InvoiceMyDay.as_view(), name='my-day'),
+    path('tax/', views.InvoiceTax.as_view(), name='tax'),
 ]
