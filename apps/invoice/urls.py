@@ -13,4 +13,5 @@ urlpatterns = [
     path('export-report-crew/', views.InvoiceCrewReportView.as_view(), name='crew-report'),
     path('my-day/', views.InvoiceMyDay.as_view(), name='my-day'),
     path('tax/', views.InvoiceTax.as_view(), name='tax'),
+    path('statistics/', views.InvoiceStatistics.as_view(), name='statistics'),
 ]
