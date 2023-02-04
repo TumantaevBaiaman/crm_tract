@@ -131,7 +131,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'chikuplusdin@gmail.com'
-EMAIL_HOST_PASSWORD = 'seipwjyzdobeisxs'
+EMAIL_HOST_PASSWORD = 'fzrdijrpfueypkoc'
 
 
 # Static files (CSS, JavaScript, Images)
