@@ -24,7 +24,7 @@ Dear {customer.full_name},
 Here's your {subject}, We appreciate your prompt payment Thanks tor your business,
 To view and print the attached invoice, double-click on the invoice icon, and then choose File, Print when the invoice displayed. To save the invoice, copy it from this e-mail to another folder on your computer.
 If you have any questions regarding this invoice, please contact Accountng at {ModelsAccount.objects.get(id=user.account_id_id).phone} or by email: {from_to} 
-Note: You require Adobe Acrobat Reader to view this attachment. Adobe Acrobat Reader is available frornhltp://www.adobe.com.
+Note: You require Adobe Acrobat Reader to view this attachment. Adobe Acrobat Reader is available from http://www.adobe.com.
 Regards, 
 Accounting Department, {ModelsAccount.objects.get(id=user.account_id_id).name}
     """

@@ -167,8 +167,10 @@ def get_filter_invoice(request):
     return Response(response, status=status.HTTP_200_OK)
 
 
-@check_auth('employee')
+@check_auth()
 def get_customer_report(user, data):
+    account = user.account_id
+    list_customers = []
     tz = timezone('UTC')
     try:
 
@@ -178,30 +180,49 @@ def get_customer_report(user, data):
         return Response({
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
-    customers_data = ModelsCustomer.objects.annotate(
-        invoice_count=Count('modelsinvoice', output_field=IntegerField()),
-        total_sum=Sum('modelsinvoice__total_sum', output_field=DecimalField()),
-        gross=(Sum('modelsinvoice__total_sum', output_field=DecimalField())*13)/100 + Sum('modelsinvoice__total_sum', output_field=DecimalField())
-    ).values('id', 'full_name', 'invoice_count', 'total_sum', 'gross')
     invoices = models.ModelsInvoice.objects.filter(
-        finished_at__range=(
+        start_at__range=(
             datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
             datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
 
-        )
+        ),
+        status='final'
     )
-    total_gross = customers_data.aggregate(Sum('gross'))
-    total_sum = customers_data.aggregate(Sum('total_sum'))
+    all_customers = [invoice.customer_id for invoice in invoices]
+    customers = [customer for customer in all_customers if customer.account == account]
+
+    gross = 0
+    total_invoice_sum = 0
+    if len(customers) >=1:
+        for customer in customers:
+            invoice_customer = invoices.filter(customer_id=customer)
+            customer_inv_sum = invoice_customer.aggregate(Sum('total_sum'))['total_sum__sum']
+            customer_gross = (customer_inv_sum*13)/100 + customer_inv_sum
+            customer_data = {}
+            customer_data['id'] = customer.id
+            customer_data['full_name'] = customer.full_name
+            customer_data['invoice_count'] = invoice_customer.count()
+            customer_data['total_sum'] = customer_inv_sum
+            customer_data['gross'] = customer_gross
+
+            list_customers.append(customer_data)
+
+            total_invoice_sum += customer_inv_sum
+            gross += customer_gross
+
+
     return Response({
-        'list_customers': customers_data,
+        'list_customers': list_customers,
         'total_count': invoices.count(),
-        'total_all_sum': total_sum['total_sum__sum'],
-        'total_gross': total_gross['gross__sum']
+        'total_all_sum': total_invoice_sum,
+        'total_gross': gross
     }, status=status.HTTP_200_OK)
 
 
-@check_auth('employee')
+@check_auth()
 def get_crew_report(user, data):
+    account = user.account_id
+    list_crews = []
     tz = timezone('UTC')
     try:
 
@@ -211,27 +232,43 @@ def get_crew_report(user, data):
         return Response({
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
-
-    crew_data = ModelsUser.objects.annotate(
-        invoice_count=Count('modelsinvoice', output_field=IntegerField()),
-        total_sum=Sum('modelsinvoice__total_sum', output_field=DecimalField()),
-        gross=(Sum('modelsinvoice__total_sum', output_field=DecimalField())*13)/100 + Sum('modelsinvoice__total_sum', output_field=DecimalField())
-    ).values('id', 'username', 'invoice_count', 'total_sum', 'gross')
     invoices = models.ModelsInvoice.objects.filter(
-        finished_at__range=(
+        start_at__range=(
             datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
             datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
 
-        )
+        ),
+        status='final',
+
     )
-    total_gross = crew_data.aggregate(Sum('gross'))
-    total_sum = crew_data.aggregate(Sum('total_sum'))
+    all_crews = [invoice.crew_id for invoice in invoices]
+    crews = [crew for crew in all_crews if crew.account_id == account]
+    gross = 0
+    total_invoice_sum = 0
+    if len(crews) >=1:
+        for crew in crews:
+            invoice_crew = invoices.filter(crew_id=crew)
+            crew_inv_sum = invoice_crew.aggregate(Sum('total_sum'))['total_sum__sum']
+            crew_gross = (crew_inv_sum*13)/100 + crew_inv_sum
+            crew_data = {}
+            crew_data['id'] = crew.id
+            crew_data['username'] = crew.username
+            crew_data['invoice_count'] = invoice_crew.count()
+            crew_data['total_sum'] = crew_inv_sum
+            crew_data['gross'] = crew_gross
+
+            list_crews.append(crew_data)
+
+            total_invoice_sum += crew_inv_sum
+            gross += crew_gross
+
+
     return Response({
-            'list_crew': crew_data,
-            'total_count': invoices.count(),
-            'total_all_sum': total_sum['total_sum__sum'],
-            'total_gross': total_gross['gross__sum']
-        }, status=status.HTTP_200_OK)
+        'list_customers': list_crews,
+        'total_count': invoices.count(),
+        'total_all_sum': total_invoice_sum,
+        'total_gross': gross
+    }, status=status.HTTP_200_OK)
 
 
 @check_auth()
