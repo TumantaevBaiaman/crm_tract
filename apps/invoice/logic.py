@@ -918,7 +918,7 @@ def generate_pdf_list_invoice(user, data):
     filename = f'Invoice_statement_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
 
     if data['send']:
-        customer = invoices.first().customer_id.full_name
+        customer = invoices.first().customer_id
         send_email_with_pdf_attachment(si, user, customer, filename, 'Invoice Statement')
         return Response({'message': 'Email sent successfully'})
     else:
