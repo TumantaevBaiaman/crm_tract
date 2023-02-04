@@ -7,7 +7,8 @@ from apps.invoice.logic import (
     generate_pdf_list_invoice,
     generate_pdf_for_detailed_invoice,
     export_invoices_csv, update_status_inv,
-    get_filter_invoice, get_customer_report, get_crew_report, get_my_day, get_tax
+    get_filter_invoice, get_customer_report,
+    get_crew_report, get_my_day, get_tax, get_statistics
 )
 
 
@@ -107,3 +108,9 @@ class InvoiceTax(APIView):
 
     def post(self, request):
         return get_tax(request)
+
+
+class InvoiceStatistics(APIView):
+
+    def post(self, request):
+        return get_statistics(request)
