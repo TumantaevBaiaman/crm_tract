@@ -370,7 +370,6 @@ def get_statistics(user, data):
                 datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
                 datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
             ),
-            status='final',
             crew_id__account_id=account
         )
     except:
@@ -382,13 +381,16 @@ def get_statistics(user, data):
         date_range = pd.date_range(start=from_date, end=to_date)
         date_range_list = date_range.tolist()
         date_range_list = [dt.strftime("%Y-%m-%d") for dt in date_range_list]
-        statistics = invoices.extra({'date': "date(start_at)"}).values('date').annotate(
+        invoice_stat = invoices.filter(
+            status='final'
+        )
+        statistics = invoice_stat.extra({'date': "date(start_at)"}).values('date').annotate(
             sum=Sum('total_sum')
         )
         statistics = {stat['date']: stat['sum'] for stat in statistics}
         final_statistics = []
-        invoice_count = invoices.count()
-        net_revenue = invoices.aggregate(sum=Sum('total_sum'))['sum']
+        invoice_count = invoice_stat.count()
+        net_revenue = invoice_stat.aggregate(sum=Sum('total_sum'))['sum']
         gross_revenue = net_revenue * Decimal('1.13')
         for date in date_range_list:
             date = datetime.strptime(date, "%Y-%m-%d").date()
@@ -398,7 +400,14 @@ def get_statistics(user, data):
             else:
                 final_statistics.append({'date': date, 'sum': 0, 'gross': 0})
 
+        final_invoices = invoice_stat.count()
+        draft_invoices = invoices.filter(status='draft').count()
+        cancel_invoices = invoices.filter(status='cancel').count()
+
         return Response({
+            'final_invoices': final_invoices,
+            'draft_invoices': draft_invoices,
+            'cancel_invoices': cancel_invoices,
             'invoice_count': invoice_count,
             'net_revenue': net_revenue,
             'gross_revenue': gross_revenue,
