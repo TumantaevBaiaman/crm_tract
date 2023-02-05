@@ -189,6 +189,7 @@ def get_customer_report(user, data):
         status='final'
     )
     all_customers = [invoice.customer_id for invoice in invoices]
+    all_customers = set(all_customers)
     customers = [customer for customer in all_customers if customer.account == account]
 
     gross = 0
@@ -242,6 +243,7 @@ def get_crew_report(user, data):
 
     )
     all_crews = [invoice.crew_id for invoice in invoices]
+    all_crews = set(all_crews)
     crews = [crew for crew in all_crews if crew.account_id == account]
     gross = 0
     total_invoice_sum = 0

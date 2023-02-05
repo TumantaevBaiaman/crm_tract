@@ -9,7 +9,6 @@ from .models import ModelsUser
 
 
 class ViewRegisterAccount(APIView):
-    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         return create_account(request)
