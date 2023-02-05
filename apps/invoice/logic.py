@@ -115,8 +115,10 @@ def get_filter_invoice(request):
     page = data['page'] if data['start_at'] else 1
     page_size = data['page_size'] if data['start_at'] else 10
 
+    employee = models.ModelsUser.objects.get(id=data['crew_id'])
+
     invoices = models.ModelsInvoice.objects.filter(
-        crew_id__account_id=data['crew_id'].account_id,
+        crew_id__account_id=employee.account_id,
         status='final'
     )
     invoices = invoices.filter(
@@ -162,11 +164,15 @@ def get_filter_invoice(request):
             'gross': (total_sum_invoice*13)/100 + total_sum_invoice,
         }
         response.append(response_data)
-    total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
+    total_sum_all_invoices = 0
+    gross_of_all_invoices = 0
+    if invoices.count() >= 1:
+        total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
+        gross_of_all_invoices = (total_sum_all_invoices*13)/100+total_sum_all_invoices
     response.append(
         {
             'total_sum_all_invoices': total_sum_all_invoices,
-            'gross_of_all_invoices': (total_sum_all_invoices*13)/100+total_sum_all_invoices,
+            'gross_of_all_invoices': gross_of_all_invoices,
         })
     return Response(response, status=status.HTTP_200_OK)
 
@@ -251,7 +257,7 @@ def get_crew_report(user, data):
     crews = [crew for crew in all_crews if crew.account_id == account]
     gross = 0
     total_invoice_sum = 0
-    if len(crews) >=1:
+    if len(crews) >= 1:
         for crew in crews:
             invoice_crew = invoices.filter(crew_id=crew)
             crew_inv_sum = invoice_crew.aggregate(Sum('total_sum'))['total_sum__sum']
@@ -332,17 +338,23 @@ def get_tax(user, data):
             start_at__range=(
                 datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
                 datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
-            )
+            ),
+            status='final'
         )
     except:
         return Response({
             'success': False,
         }, status=status.HTTP_404_NOT_FOUND)
     try:
-        total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
-        gross = (total_sum_all_invoices*13)/100 + total_sum_all_invoices
-        tax = (total_sum_all_invoices*13)/100
-        invoices_count = invoices.count()
+        total_sum_all_invoices = 0
+        gross = 0
+        invoices_count = 0
+        tax = 0
+        if invoices.count() >= 1:
+            total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
+            gross = (total_sum_all_invoices*13)/100 + total_sum_all_invoices
+            tax = (total_sum_all_invoices*13)/100
+            invoices_count = invoices.count()
         return Response({
             'success': True,
             'name': 'HST',
@@ -990,7 +1002,8 @@ def generate_pdf_list_invoice(user, data):
         invoices = models.ModelsInvoice.objects.filter(
             crew_id__account_id=user.account_id,
             customer_id_id=data['customer_id'],
-            start_at__range=(start_date, end_date)
+            start_at__range=(start_date, end_date),
+            status='final'
         )
 
     except:
