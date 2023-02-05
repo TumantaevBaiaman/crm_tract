@@ -360,6 +360,10 @@ def get_tax(user, data):
 
 @check_auth('admin')
 def get_statistics(user, data):
+    final_statistics = []
+    invoice_count = 0
+    net_revenue = 0
+    gross_revenue = 0
     try:
         tz = timezone('UTC')
         from_date = data['from_date']
@@ -384,21 +388,22 @@ def get_statistics(user, data):
         invoice_stat = invoices.filter(
             status='final'
         )
-        statistics = invoice_stat.extra({'date': "date(start_at)"}).values('date').annotate(
-            sum=Sum('total_sum')
-        )
-        statistics = {stat['date']: stat['sum'] for stat in statistics}
-        final_statistics = []
-        invoice_count = invoice_stat.count()
-        net_revenue = invoice_stat.aggregate(sum=Sum('total_sum'))['sum']
-        gross_revenue = net_revenue * Decimal('1.13')
-        for date in date_range_list:
-            date = datetime.strptime(date, "%Y-%m-%d").date()
-            if date in statistics:
-                gross = Decimal(statistics[date] * Decimal(13) / 100 + statistics[date])
-                final_statistics.append({'date': date, 'sum': statistics[date], 'gross': gross})
-            else:
-                final_statistics.append({'date': date, 'sum': 0, 'gross': 0})
+        if invoice_stat.count() >= 1:
+            statistics = invoice_stat.extra({'date': "date(start_at)"}).values('date').annotate(
+                sum=Sum('total_sum')
+            )
+            statistics = {stat['date']: stat['sum'] for stat in statistics}
+            invoice_count = invoice_stat.count()
+            net_revenue = invoice_stat.aggregate(sum=Sum('total_sum'))['sum']
+            gross_revenue = net_revenue * Decimal('1.13')
+
+            for date in date_range_list:
+                date = datetime.strptime(date, "%Y-%m-%d").date()
+                if date in statistics:
+                    gross = Decimal(statistics[date] * Decimal(13) / 100 + statistics[date])
+                    final_statistics.append({'date': date, 'sum': statistics[date], 'gross': gross})
+                else:
+                    final_statistics.append({'date': date, 'sum': 0, 'gross': 0})
 
         final_invoices = invoice_stat.count()
         draft_invoices = invoices.filter(status='draft').count()
