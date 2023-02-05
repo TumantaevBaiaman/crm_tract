@@ -49,7 +49,8 @@ def query_invoice(user, data):
         end_date = datetime.strptime(data['end_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
         invoices = models.ModelsInvoice.objects.filter(
             crew_id__account_id=user.account_id,
-            finished_at__range=(start_date, end_date)
+            start_at__range=(start_date, end_date),
+            status='final'
         )
         return invoices
     except:
@@ -114,9 +115,12 @@ def get_filter_invoice(request):
     page = data['page'] if data['start_at'] else 1
     page_size = data['page_size'] if data['start_at'] else 10
 
-    invoices = models.ModelsInvoice.objects.all()
+    invoices = models.ModelsInvoice.objects.filter(
+        crew_id__account_id=data['crew_id'].account_id,
+        status='final'
+    )
     invoices = invoices.filter(
-        finished_at__range=(
+        start_at__range=(
             datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
             datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
 
@@ -281,7 +285,8 @@ def get_my_day(user, data):
         to_date = data['to_date']
         user_status = str(user.status)
         invoices = models.ModelsInvoice.objects.filter(
-            finished_at__range=(
+            crew_id__account_id=user.account_id,
+            start_at__range=(
                 datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
                 datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
             )
@@ -324,7 +329,7 @@ def get_tax(user, data):
         to_date = data['to_date']
         invoices = models.ModelsInvoice.objects.filter(
             crew_id__account_id=user.account_id,
-            finished_at__range=(
+            start_at__range=(
                 datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
                 datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
             )
@@ -971,7 +976,7 @@ def generate_pdf_list_invoice(user, data):
         invoices = models.ModelsInvoice.objects.filter(
             crew_id__account_id=user.account_id,
             customer_id_id=data['customer_id'],
-            finished_at__range=(start_date, end_date)
+            start_at__range=(start_date, end_date)
         )
 
     except:
