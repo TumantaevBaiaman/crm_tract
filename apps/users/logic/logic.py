@@ -62,6 +62,8 @@ def check_auth(access_status=None):
                                 user = ModelsUser.objects.get(id=request.user.id, is_active=True)
                                 if user.status_id:
                                     status_model = ModelsSatus.objects.get(id=user.status_id).name
+                else:
+                    return Response({"error": "Unauthorized"}, status=401)
             else:
                 pass
             status_list = ('employee', 'admin')
