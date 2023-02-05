@@ -126,7 +126,7 @@ def create_profile(user, data):
                 valid_data = serializer.validated_data
                 email, password = valid_data['email'], valid_data['password']
                 user = ModelsUser.objects.create_user(
-                    username=email,
+                    username=data['username'],
                     email=email,
                     password=password
                 )
@@ -140,7 +140,6 @@ def create_profile(user, data):
         user.phone = data['phone'] if data['phone'] else None
         user.date_of_birth = data['date_of_birth'] if data['date_of_birth'] else None
         user.is_active = True
-        user.save()
         user.save()
         send_auth_mail('signup', user, password)
         return Response({
@@ -157,7 +156,6 @@ def create_profile(user, data):
         try:
             user = ModelsUser.objects.get(id=user.id)
             account = ModelsAccount.objects.get(id=user.account_id_id)
-            status_name = ModelsSatus.objects.get(id=user.status_id).name
             status_name = ModelsSatus.objects.get(id=user.status_id).name
         except:
             return Response({
@@ -180,7 +178,7 @@ def create_profile(user, data):
                 valid_data = serializer.validated_data
                 email, password = valid_data['email'], valid_data['password']
                 user = ModelsUser.objects.create_user(
-                    username=email,
+                    username=data['username'],
                     email=email,
                     password=password
                 )
