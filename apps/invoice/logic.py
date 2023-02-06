@@ -313,8 +313,15 @@ def get_my_day(user, data):
         if data['customer_id']:
             invoices = invoices.filter(customer_id_id=data['customer_id'])
 
-        total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
-        gross = (total_sum_all_invoices*13)/100 + total_sum_all_invoices
+        total_sum_all_invoices = 0
+        gross = 0
+
+        if invoices.count() >= 1:
+            total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
+            gross = (total_sum_all_invoices*13)/100 + total_sum_all_invoices
+
+        print(invoices)
+
         return Response({
             'success': True,
             'total_invoice_sum': total_sum_all_invoices,

@@ -25,6 +25,7 @@ class ViewRegisterUser(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
+        print(request.data)
         return create_profile(request)
 
 
