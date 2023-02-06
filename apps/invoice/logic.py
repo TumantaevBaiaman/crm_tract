@@ -320,8 +320,6 @@ def get_my_day(user, data):
             total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
             gross = (total_sum_all_invoices*13)/100 + total_sum_all_invoices
 
-        print(invoices)
-
         return Response({
             'success': True,
             'total_invoice_sum': total_sum_all_invoices,
