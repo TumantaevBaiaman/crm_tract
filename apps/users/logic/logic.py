@@ -62,8 +62,8 @@ def check_auth(access_status=None):
                                 user = ModelsUser.objects.get(id=request.user.id, is_active=True)
                                 if user.status_id:
                                     status_model = ModelsSatus.objects.get(id=user.status_id).name
-                else:
-                    return Response({"error": "Unauthorized"}, status=401)
+                # else:
+                #     return Response({"error": "Unauthorized"}, status=401)
             else:
                 pass
             status_list = ('employee', 'admin')
@@ -137,6 +137,7 @@ def create_profile(user, data):
                 }, status=status.HTTP_400_BAD_REQUEST)
         user.is_active = True
         user.lastname = data['lastname'] if data['lastname'] else None
+        user.username = data['username'] if data['username'] else None
         user.phone = data['phone'] if data['phone'] else None
         user.date_of_birth = data['date_of_birth'] if data['date_of_birth'] else None
         user.is_active = True
@@ -189,6 +190,7 @@ def create_profile(user, data):
                 }, status=status.HTTP_400_BAD_REQUEST)
         user.account_id = account
         user.lastname = data['lastname'] if data['lastname'] else None
+        user.username = data['username'] if data['username'] else None
         user.status = ModelsSatus.objects.get(name=user_status)
         user.phone = data['phone'] if data['phone'] else None
         user.date_of_birth = data['date_of_birth'] if data['date_of_birth'] else None
@@ -201,6 +203,60 @@ def create_profile(user, data):
                 'email': user.email,
             }
         }, status=status.HTTP_201_CREATED)
+
+
+@check_auth()
+def new_reg_user(user, data):
+    step = 0
+    try:
+        step = int(data['step'])
+    except:
+        pass
+    try:
+        email = data['email']
+    except:
+        return Response({
+            'success': False,
+            'errors': ["Email wasn't entered"]
+        }, status=status.HTTP_400_BAD_REQUEST)
+    if step == 1:
+        if ModelsUser.objects.filter(email=email, is_active=True):
+            return Response({
+                'success': False,
+                'errors': ['User with this email already exists. Try again with new email address.']
+            }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            password = generate_password()
+            data['password'] = password
+            serializer = SignUpSerializer(data=data)
+            if serializer.is_valid():
+                valid_data = serializer.validated_data
+                email, password = valid_data['email'], valid_data['password']
+                user = ModelsUser.objects.create_user(
+                    username=data['username'],
+                    email=email,
+                    password=password
+                )
+            else:
+                return Response({
+                    'success': False,
+                    'errors': serialize_errors(serializer.errors)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        user.is_active = True
+        user.lastname = data['lastname'] if data['lastname'] else None
+        user.username = data['username'] if data['username'] else None
+        user.phone = data['phone'] if data['phone'] else None
+        user.date_of_birth = data['date_of_birth'] if data['date_of_birth'] else None
+        user.is_active = True
+        user.save()
+        send_auth_mail('signup', user, password)
+        return Response({
+            'success': True,
+            'data': {
+                'email': user.email,
+            }
+        }, status=status.HTTP_201_CREATED)
+
 
 
 @check_auth()
@@ -251,7 +307,7 @@ def create_account(user, data):
 @check_auth('admin')
 def get_user_list(user, data):
     user = ModelsUser.objects.get(id=user.id, is_active=True)
-    users = ModelsUser.objects.filter(account_id=user.account_id_id)
+    users = ModelsUser.objects.filter(account_id=user.account_id_id).exclude(id=user.id)
     return Response({
         'success': True,
         'users': SerializerUser(users, many=True).data,

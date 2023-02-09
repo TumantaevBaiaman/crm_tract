@@ -101,6 +101,7 @@ class InvoiceCrewReportView(APIView):
 class InvoiceMyDay(APIView):
 
     def post(self, request):
+        print(request.data)
         return get_my_day(request)
 
 

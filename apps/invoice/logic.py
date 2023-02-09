@@ -319,7 +319,6 @@ def get_my_day(user, data):
         if invoices.count() >= 1:
             total_sum_all_invoices = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
             gross = (total_sum_all_invoices*13)/100 + total_sum_all_invoices
-
         return Response({
             'success': True,
             'total_invoice_sum': total_sum_all_invoices,
@@ -949,7 +948,7 @@ def _build_itemized_detail_description_table(user, data):
 
     return table_001
 
-@check_auth('default')
+@check_auth()
 def generate_pdf_for_detailed_invoice(user, data):
     # Create document
     si = io.BytesIO()
@@ -964,8 +963,10 @@ def generate_pdf_for_detailed_invoice(user, data):
     page_layout.vertical_margin = page.get_page_info().get_height() * Decimal(0.02)
 
     # Invoice information table
+
     page_layout.add(_build_invoice_information_head_detail(user, data))
     # page_layout.add(_build_invoice_information())
+
     page_layout.add(_build_invoice_detail_information(user, data))
 
     # Empty paragraph for spacing
@@ -975,6 +976,7 @@ def generate_pdf_for_detailed_invoice(user, data):
     page_layout.add(Paragraph(" "))
 
     # Itemized description
+
     page_layout.add(
         _build_itemized_detail_description_table(user, data)
     )
@@ -997,7 +999,7 @@ def generate_pdf_for_detailed_invoice(user, data):
         return response
 
 
-@check_auth('default')
+@check_auth()
 def generate_pdf_list_invoice(user, data):
     try:
         tz = timezone('UTC')

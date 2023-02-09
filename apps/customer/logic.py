@@ -27,7 +27,8 @@ def create_customer(user, data):
     try:
         emails = data['email']
         text = re.sub(r'\s+', '', emails.strip())
-        list_emails = text.split(",")
+        # list_emails = text.split(",")
+        list_emails = text
         serializer = serializers.SerializerCustomer(data=data)
         if serializer.is_valid():
             customer = models.ModelsCustomer.objects.create(
