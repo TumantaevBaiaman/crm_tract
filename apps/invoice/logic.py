@@ -196,6 +196,7 @@ def get_customer_report(user, data):
             datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
 
         ),
+        crew_id__account_id=account,
         status='final'
     )
     all_customers = [invoice.customer_id for invoice in invoices]
@@ -250,6 +251,7 @@ def get_crew_report(user, data):
 
         ),
         status='final',
+        crew_id__account_id=account
 
     )
     all_crews = [invoice.crew_id for invoice in invoices]
