@@ -128,10 +128,11 @@ def get_filter_invoice(request):
 
         )
     )
+    print(crew)
     if number is not None:
         invoices = invoices.filter(number=number)
     if crew is not None:
-        invoices = invoices.filter(crew_id=crew)
+        invoices = invoices.filter(crew_id_id=crew)
     if car_id is not None:
         invoices = invoices.filter(car_id=car_id)
     if customer_id is not None:
@@ -199,15 +200,18 @@ def get_customer_report(user, data):
         crew_id__account_id=account,
         status='final'
     )
+    print(invoices)
     all_customers = [invoice.customer_id for invoice in invoices]
     all_customers = set(all_customers)
+    print(all_customers)
     customers = [customer for customer in all_customers if customer.account == account]
 
     gross = 0
     total_invoice_sum = 0
-    if len(customers) >=1:
+    if len(customers) >= 1:
         for customer in customers:
             invoice_customer = invoices.filter(customer_id=customer)
+            print(invoice_customer)
             customer_inv_sum = invoice_customer.aggregate(Sum('total_sum'))['total_sum__sum']
             customer_gross = (customer_inv_sum*13)/100 + customer_inv_sum
             customer_data = {}
@@ -221,6 +225,7 @@ def get_customer_report(user, data):
 
             total_invoice_sum += customer_inv_sum
             gross += customer_gross
+
 
 
     return Response({
@@ -1067,6 +1072,7 @@ def generate_pdf_list_invoice(user, data):
 @check_auth('admin')
 def export_invoices_csv(user, data):
     invoices = query_invoice(user, data)
+    print(invoices)
     filename = f'Invoices_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
     output = io.StringIO()
     format_file = 'csv'

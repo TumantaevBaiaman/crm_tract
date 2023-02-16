@@ -307,7 +307,7 @@ def create_account(user, data):
 @check_auth('admin')
 def get_user_list(user, data):
     user = ModelsUser.objects.get(id=user.id, is_active=True)
-    users = ModelsUser.objects.filter(account_id=user.account_id_id).exclude(id=user.id)
+    users = ModelsUser.objects.filter(account_id=user.account_id_id)
     return Response({
         'success': True,
         'users': SerializerUser(users, many=True).data,

@@ -1,4 +1,5 @@
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -22,8 +23,10 @@ class ViewGetInvoice(APIView):
 
 
 class InvoiceListExport(APIView):
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request):
+        print('hello')
         try:
             data = extract_request_data(request)
             action_name = data['action']

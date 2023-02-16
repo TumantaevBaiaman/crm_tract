@@ -62,18 +62,22 @@ def create_customer(user, data):
 def get_customers(user, data):
     if 'id' in list(data.keys()):
         customer = models.ModelsCustomer.objects.get(
-            user=user, id=data["id"], deleted=False
+            id=data["id"], deleted=False
         )
+        print(customer)
         cars = ModelsCars.objects.filter(customer=customer, deleted=False)
         invoices = ModelsInvoice.objects.filter(customer_id=customer)
+        print(invoices)
         return Response({
             'success': True,
             'customer': serializers.SerializerCustomer(customer).data,
             'cars': SerializerCar(cars, many=True).data,
             'invoices': SerializerInvoice(invoices, many=True).data,
         }, status=status.HTTP_200_OK)
+
     else:
-        customers = models.ModelsCustomer.objects.filter(user=user, deleted=False)
+        customers = models.ModelsCustomer.objects.filter(account=user.account_id, deleted=False)
+        print(customers)
         return Response({
             'success': True,
             'customers': serializers.SerializerCustomer(customers, many=True).data,
