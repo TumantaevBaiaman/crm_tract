@@ -47,7 +47,7 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = ['backapt.com', '68.183.194.136', 'www.backapt.com']
-CSRF_TRUSTED_ORIGINS = ['https://backapt.com/', 'https://www.backapt.com/']
+CSRF_TRUSTED_ORIGINS = ['https://backapt.com', 'https://www.backapt.com']
 
 # CORE SETTINGS
 ASGI_APPLICATION = 'crm_tract.asgi.application'
