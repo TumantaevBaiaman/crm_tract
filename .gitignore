@@ -25,7 +25,7 @@ media
 
 # C extensions
 *.so
-
+docker/nginx/certbot
 # Distribution / packaging
 .Python
 build/

@@ -8,7 +8,7 @@ services:
     networks:
       - my-network
     env_file:
-      - .env
+      - ./.env
 
 #  redis:
 #    image: redis:latest
@@ -39,7 +39,7 @@ services:
     depends_on:
       - db
     env_file:
-      - .env
+      - ./.env
 
 #  celery:
 #    build:
