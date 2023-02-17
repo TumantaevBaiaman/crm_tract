@@ -11,7 +11,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     'https://apttract.com',
-    "http://159.89.125.179:3000"
+    "http://159.89.119.142:3000"
 ]
 
 CORS_ALLOW_METHODS = [
