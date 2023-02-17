@@ -1,0 +1,94 @@
+version: '3.7'
+
+services:
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    networks:
+      - my-network
+    env_file:
+      - .env
+
+#  redis:
+#    image: redis:latest
+#    container_name: redis_server
+#    ports:
+#      - '6379:6379'
+#    expose:
+#      - 6379
+#    volumes:
+#      - redis_data:/data
+#    networks:
+#      - my-network
+
+
+  backend:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - static_volume:/app/backend/staticfiles
+      - media_volume:/app/backend/media
+    entrypoint: /app/docker/backend/wsgi-entrypoint.sh
+    networks:
+      - my-network
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+#  celery:
+#    build:
+#      context: .
+#      dockerfile: ./docker/backend/Dockerfile
+#    container_name: celery-worker
+#    command: bash -c "cd /app/backend && celery -A shop worker -l INFO"
+#    networks:
+#      - my-network
+#    depends_on:
+#      - redis
+#      - backend
+#      - db
+#    env_file:
+#      - ./.env
+#    restart: always
+
+  nginx:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./docker/nginx/dev:/etc/nginx/conf.d
+      - static_volume:/app/backend/staticfiles
+      - media_volume:/app/backend/media
+#      - ./docker/nginx/certbot/conf:/etc/letsencrypt
+#      - ./docker/nginx/certbot/www:/var/www/certbot
+    networks:
+      - my-network
+    depends_on:
+      - backend
+      - db
+
+#  certbot:
+#    image: certbot/certbot
+#    restart: unless-stopped
+#    volumes:
+#      - ./docker/nginx/certbot/conf:/etc/letsencrypt
+#      - ./docker/nginx/certbot/www:/var/www/certbot
+#    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  media_volume:
+  static_volume:
+  postgres_data:
+
+networks:
+  my-network:
