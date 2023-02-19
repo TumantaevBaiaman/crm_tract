@@ -12,6 +12,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     'https://apttract.com',
     "http://159.89.119.142:3000"
+    "https://devapttract.com/"
 ]
 
 CORS_ALLOW_METHODS = [
