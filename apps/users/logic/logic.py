@@ -156,13 +156,14 @@ def create_profile(user, data):
             pass
         try:
             user = ModelsUser.objects.get(id=user.id)
-            account = ModelsAccount.objects.get(id=user.account_id_id)
+            white_account = ModelsAccount.objects.get(id=user.white_account_id_id)
+            black_account = ModelsAccount.objects.get(id=user.black_account_id_id)
             status_name = ModelsSatus.objects.get(id=user.status_id).name
         except:
             return Response({
                 'success': False,
             }, status=status.HTTP_400_BAD_REQUEST)
-        if status_name != 'admin' and account:
+        if status_name != 'admin' and white_account:
             return Response({
                 'success': False,
             }, status=status.HTTP_403_FORBIDDEN)
@@ -188,7 +189,8 @@ def create_profile(user, data):
                     'success': False,
                     'errors': serialize_errors(serializer.errors)
                 }, status=status.HTTP_400_BAD_REQUEST)
-        user.account_id = account
+        user.white_account_id = white_account
+        user.black_account_id = black_account
         user.lastname = data['lastname'] if data['lastname'] else None
         user.username = data['username'] if data['username'] else None
         user.status = ModelsSatus.objects.get(name=user_status)
@@ -258,6 +260,22 @@ def new_reg_user(user, data):
         }, status=status.HTTP_201_CREATED)
 
 
+def register_accounts(user, data):
+    if data['id'] == 1:
+        data['name'] = 'black-' + data['name']
+    serializer = SerializerAccount(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        account = serializer.instance
+        status_name = ModelsSatus.objects.get(name='admin')
+        if data['id'] == 0:
+            user.white_account_id = account
+        else:
+            user.black_account_id = account
+        user.status_id = status_name
+        user.save()
+        return account
+
 
 @check_auth()
 def create_account(user, data):
@@ -276,30 +294,22 @@ def create_account(user, data):
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    if ModelsAccount.objects.filter(name=name):
+    if ModelsAccount.objects.filter(name=data['name']):
         return Response({
             'success': False,
             'errors': ['Account with this name already exists. Try again with new name.']
         }, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        serializer = SerializerAccount(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            account = serializer.instance
-        else:
-            return Response({
-                'success': False,
-                'errors': serialize_errors(serializer.errors)
-            }, status=status.HTTP_400_BAD_REQUEST)
-    # account.save()
-    status_name = ModelsSatus.objects.get(name='admin')
-    user.account_id = account
-    user.status_id = status_name
-    user.save()
+
+    accounts = []
+    for i in range(2):
+        data['id'] = i
+        account = register_accounts(user, data)
+        accounts.append(account)
+
     return Response({
         'success': True,
         'data': {
-            'account': account.name,
+            'accounts': SerializerAccount(accounts, many=True).data,
         }
     }, status=status.HTTP_201_CREATED)
 

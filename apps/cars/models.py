@@ -2,11 +2,13 @@ from django.db import models
 
 from apps.customer.models import ModelsCustomer
 from apps.account.models import ModelsAccount
+from apps.users.models import ModelsUser
 
 
 class ModelsCars(models.Model):
     customer = models.ForeignKey(ModelsCustomer, on_delete=models.CASCADE)
     account = models.ForeignKey(ModelsAccount, on_delete=models.CASCADE, null=True, blank=True)
+    profile = models.ForeignKey(ModelsUser, on_delete=models.CASCADE)
     description = models.TextField()
     stock = models.CharField(max_length=55)
     vin = models.CharField(max_length=55)
