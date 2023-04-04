@@ -29,7 +29,6 @@ class ModelsInvoice(models.Model):
 
     STATUS_CHOICES = dict_to_choices(STATUSES)
     number = models.CharField(max_length=255, null=True)
-    po = models.CharField(max_length=255, null=True)
     crew_id = models.ForeignKey(ModelsUser, on_delete=models.CASCADE)
     car_id = models.ForeignKey(ModelsCars, on_delete=models.CASCADE)
     customer_id = models.ForeignKey(ModelsCustomer, on_delete=models.CASCADE)
@@ -44,13 +43,12 @@ class ModelsInvoice(models.Model):
     def __str__(self):
         return f"{self.crew_id}, {self.car_id}"
 
-    # def save(self, *args, **kwargs):
-    #     if self.pk:
-    #         self.po = random.randint(1000000000,9999999999)
-    #         if len(str(self.pk)) > 6:
-    #             temp_number = str(self.pk)
-    #         else:
-    #             temp_number = f'{self.pk:06}'
-    #         self.number = str(datetime.now().year) + '-' + temp_number
-    #     super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        if self.pk:
+            if len(str(self.pk)) > 6:
+                temp_number = str(self.pk)
+            else:
+                temp_number = f'{self.pk:06}'
+            self.number = str(datetime.now().year) + '-' + temp_number
+        super().save(*args, **kwargs)
 

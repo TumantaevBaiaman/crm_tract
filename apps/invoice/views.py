@@ -26,7 +26,6 @@ class InvoiceListExport(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        print('hello')
         try:
             data = extract_request_data(request)
             action_name = data['action']
@@ -104,7 +103,6 @@ class InvoiceCrewReportView(APIView):
 class InvoiceMyDay(APIView):
 
     def post(self, request):
-        print(request.data)
         return get_my_day(request)
 
 

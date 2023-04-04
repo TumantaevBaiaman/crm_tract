@@ -14,19 +14,19 @@ from django.conf import settings
 from django.core.mail import send_mail
 
 
-def send_email_with_pdf_attachment(file, user, customer, filename, subject):
+def send_email_with_pdf_attachment(file, user, customer, filename, subject, data):
     customer_emails = customer.email
     text = re.sub(r'\s+', '', customer_emails.strip())
     send_to = text.split(",")
-    from_to = ModelsAccount.objects.get(id=user.account_id_id).email
+    from_to = ModelsAccount.objects.get(id=int(data["account_id"])).email
     text = f"""
 Dear {customer.full_name},
 Here's your {subject}, We appreciate your prompt payment Thanks tor your business,
 To view and print the attached invoice, double-click on the invoice icon, and then choose File, Print when the invoice displayed. To save the invoice, copy it from this e-mail to another folder on your computer.
-If you have any questions regarding this invoice, please contact Accountng at {ModelsAccount.objects.get(id=user.account_id_id).phone} or by email: {from_to} 
+If you have any questions regarding this invoice, please contact Accountng at {ModelsAccount.objects.get(id=int(data["account_id"])).phone} or by email: {from_to} 
 Note: You require Adobe Acrobat Reader to view this attachment. Adobe Acrobat Reader is available from http://www.adobe.com.
 Regards, 
-Accounting Department, {ModelsAccount.objects.get(id=user.account_id_id).name}
+Accounting Department, {ModelsAccount.objects.get(id=int(data["account_id"])).name}
     """
     email = EmailMessage(
         subject,
@@ -100,6 +100,7 @@ def generate_password():
 
 @check_auth()
 def create_profile(user, data):
+    print(data)
     step = 0
     try:
         step = int(data['step'])
@@ -261,8 +262,11 @@ def new_reg_user(user, data):
 
 
 def register_accounts(user, data):
+
     if data['id'] == 1:
         data['name'] = 'black-' + data['name']
+        data['logo'] = None
+
     serializer = SerializerAccount(data=data)
     if serializer.is_valid():
         serializer.save()
@@ -317,7 +321,7 @@ def create_account(user, data):
 @check_auth('admin')
 def get_user_list(user, data):
     user = ModelsUser.objects.get(id=user.id, is_active=True)
-    users = ModelsUser.objects.filter(account_id=user.account_id_id)
+    users = ModelsUser.objects.filter(white_account_id=int(data["account_id"])) if int(data["account_status"]) == 1 else ModelsUser.objects.filter(black_account_id=int(data["account_id"]))
     return Response({
         'success': True,
         'users': SerializerUser(users, many=True).data,
@@ -341,7 +345,8 @@ def get_profile(user, data):
             'success': True,
             'profile': SerializerUser(user).data,
             'status': SerializerSatus(status_model).data,
-            'account': SerializerAccount(user.account_id).data,
+            'account_black': SerializerAccount(user.black_account_id).data,
+            'account_white': SerializerAccount(user.white_account_id).data,
         }, status=status.HTTP_200_OK)
     else:
         return Response({

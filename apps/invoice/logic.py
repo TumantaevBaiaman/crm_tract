@@ -48,7 +48,7 @@ def query_invoice(user, data):
         start_date = datetime.strptime(data['start_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
         end_date = datetime.strptime(data['end_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
         invoices = models.ModelsInvoice.objects.filter(
-            crew_id__account_id=user.account_id,
+            account=ModelsAccount.objects.get(id=data["account_id"]),
             start_at__range=(start_date, end_date),
             status='final'
         )
@@ -78,15 +78,15 @@ def get_invoice(user, data):
         invoice = models.ModelsInvoice.objects.get(
             id=data["id"],
         )
-        account = invoice.crew_id.account_id
+        account = ModelsAccount.objects.get(id=int(data["account"]))
         return Response({
             'success': True,
             'account': SerializerAccount(account).data,
             'invoice': SerializerInvoice(invoice).data,
         }, status=status.HTTP_200_OK)
     else:
-        invoices = models.ModelsInvoice.objects.filter(crew_id=user)
-        account = user.account_id
+        invoices = models.ModelsInvoice.objects.filter(crew_id=user, account=int(data["account_id"]))
+        account = ModelsAccount.objects.get(id=int(data["account_id"]))
         return Response({
             'success': True,
             'account': SerializerAccount(account).data,
@@ -118,7 +118,7 @@ def get_filter_invoice(request):
     employee = models.ModelsUser.objects.get(id=data['crew_id'])
 
     invoices = models.ModelsInvoice.objects.filter(
-        crew_id__account_id=employee.account_id,
+        account=int(data["account_id"]),
         status='final'
     )
     invoices = invoices.filter(
@@ -128,7 +128,6 @@ def get_filter_invoice(request):
 
         )
     )
-    print(crew)
     if number is not None:
         invoices = invoices.filter(number=number)
     if crew is not None:
@@ -180,7 +179,7 @@ def get_filter_invoice(request):
 
 @check_auth()
 def get_customer_report(user, data):
-    account = user.account_id
+    account = ModelsAccount.objects.get(id=int(data["account_id"]))
     list_customers = []
     tz = timezone('UTC')
     try:
@@ -197,13 +196,11 @@ def get_customer_report(user, data):
             datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
 
         ),
-        crew_id__account_id=account,
+        account_id=account,
         status='final'
     )
-    print(invoices)
     all_customers = [invoice.customer_id for invoice in invoices]
     all_customers = set(all_customers)
-    print(all_customers)
     customers = [customer for customer in all_customers if customer.account == account]
 
     gross = 0
@@ -211,7 +208,6 @@ def get_customer_report(user, data):
     if len(customers) >= 1:
         for customer in customers:
             invoice_customer = invoices.filter(customer_id=customer)
-            print(invoice_customer)
             customer_inv_sum = invoice_customer.aggregate(Sum('total_sum'))['total_sum__sum']
             customer_gross = (customer_inv_sum*13)/100 + customer_inv_sum
             customer_data = {}
@@ -236,13 +232,12 @@ def get_customer_report(user, data):
     }, status=status.HTTP_200_OK)
 
 
-@check_auth()
+@check_auth("employee")
 def get_crew_report(user, data):
-    account = user.account_id
+    account = ModelsAccount.objects.get(id=int(data["account_id"]))
     list_crews = []
     tz = timezone('UTC')
     try:
-
         from_date = data['from_date']
         to_date = data['to_date']
     except:
@@ -256,38 +251,57 @@ def get_crew_report(user, data):
 
         ),
         status='final',
-        crew_id__account_id=account
+        account=account)
+    if str(user.status) == 'admin':
+        all_crews = [invoice.crew_id for invoice in invoices]
+        all_crews = set(all_crews)
+        crews = [crew for crew in all_crews if crew.white_account_id == account] if int(data["account_status"]) == 1 else [crew for crew in all_crews if crew.black_account_id == account]
+        gross = 0
+        total_invoice_sum = 0
+        if len(crews) >= 1:
+            for crew in crews:
+                invoice_crew = invoices.filter(crew_id=crew)
+                if len(invoices) > 0:
+                    crew_inv_sum = invoice_crew.aggregate(Sum('total_sum'))['total_sum__sum']
+                    crew_gross = (crew_inv_sum * 13) / 100 + crew_inv_sum
+                else:
+                    crew_inv_sum = 0
+                    crew_gross = 0
+                crew_data = {}
+                crew_data['id'] = crew.id
+                crew_data['username'] = crew.username
+                crew_data['invoice_count'] = invoice_crew.count()
+                crew_data['total_sum'] = crew_inv_sum
+                crew_data['gross'] = crew_gross
 
-    )
-    all_crews = [invoice.crew_id for invoice in invoices]
-    all_crews = set(all_crews)
-    crews = [crew for crew in all_crews if crew.account_id == account]
-    gross = 0
-    total_invoice_sum = 0
-    if len(crews) >= 1:
-        for crew in crews:
-            invoice_crew = invoices.filter(crew_id=crew)
-            crew_inv_sum = invoice_crew.aggregate(Sum('total_sum'))['total_sum__sum']
-            crew_gross = (crew_inv_sum*13)/100 + crew_inv_sum
-            crew_data = {}
-            crew_data['id'] = crew.id
-            crew_data['username'] = crew.username
-            crew_data['invoice_count'] = invoice_crew.count()
-            crew_data['total_sum'] = crew_inv_sum
-            crew_data['gross'] = crew_gross
+                list_crews.append(crew_data)
 
-            list_crews.append(crew_data)
-
-            total_invoice_sum += crew_inv_sum
-            gross += crew_gross
+                total_invoice_sum += crew_inv_sum
+                gross += crew_gross
 
 
-    return Response({
-        'list_customers': list_crews,
-        'total_count': invoices.count(),
-        'total_all_sum': total_invoice_sum,
-        'total_gross': gross
-    }, status=status.HTTP_200_OK)
+        return Response({
+            'list_customers': list_crews,
+            'total_count': invoices.count(),
+            'total_all_sum': total_invoice_sum,
+            'total_gross': gross
+        }, status=status.HTTP_200_OK)
+    else:
+        invoices = invoices.filter(crew_id=user)
+        if len(invoices) > 0:
+            crew_inv_sum = invoices.aggregate(Sum('total_sum'))['total_sum__sum']
+            crew_gross = (crew_inv_sum * 13) / 100 + crew_inv_sum
+        else:
+            crew_inv_sum = 0
+            crew_gross = 0
+
+        return Response({
+            'total_count': invoices.count(),
+            'total_all_sum': crew_inv_sum,
+            'total_gross': crew_gross
+        }, status=status.HTTP_200_OK)
+
+
 
 
 @check_auth()
@@ -298,12 +312,13 @@ def get_my_day(user, data):
         to_date = data['to_date']
         user_status = str(user.status)
         invoices = models.ModelsInvoice.objects.filter(
-            crew_id__account_id=user.account_id,
+            account_id=int(data["account_id"]),
             start_at__range=(
                 datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
                 datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
             )
         )
+
     except:
         return Response({
             'success': False,
@@ -312,8 +327,8 @@ def get_my_day(user, data):
         if user_status == 'admin':
             if data['crew_id']:
                 invoices = invoices.filter(crew_id_id=data['crew_id'])
-            else:
-                invoices = invoices.filter(crew_id=user)
+            # else:
+            #     invoices = invoices.filter(crew_id=user)
         else:
             invoices = invoices.filter(crew_id=user)
 
@@ -345,7 +360,7 @@ def get_tax(user, data):
         from_date = data['from_date']
         to_date = data['to_date']
         invoices = models.ModelsInvoice.objects.filter(
-            crew_id__account_id=user.account_id,
+            account_id=int(data["account_id"]),
             start_at__range=(
                 datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
                 datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
@@ -391,13 +406,13 @@ def get_statistics(user, data):
         tz = timezone('UTC')
         from_date = data['from_date']
         to_date = data['to_date']
-        account = user.account_id
+        # account = user.account_id
         invoices = models.ModelsInvoice.objects.filter(
             start_at__range=(
                 datetime.strptime(from_date + ' 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz),
                 datetime.strptime(to_date + ' 23:59:59', "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
             ),
-            crew_id__account_id=account
+            account_id=int(data["account_id"])
         )
     except:
         return Response({
@@ -422,12 +437,11 @@ def get_statistics(user, data):
 
             for date in date_range_list:
                 date = datetime.strptime(date, "%Y-%m-%d").date()
-                if date in statistics:
-                    gross = Decimal(statistics[date] * Decimal(13) / 100 + statistics[date])
-                    final_statistics.append({'date': date, 'sum': statistics[date], 'gross': gross})
+                if str(date) in statistics:
+                    gross = Decimal(statistics[str(date)] * Decimal(13) / 100 + statistics[str(date)])
+                    final_statistics.append({'date': date, 'sum': statistics[str(date)], 'gross': gross})
                 else:
                     final_statistics.append({'date': date, 'sum': 0, 'gross': 0})
-
         final_invoices = invoice_stat.count()
         draft_invoices = invoices.filter(status='draft').count()
         cancel_invoices = invoices.filter(status='cancel').count()
@@ -472,42 +486,52 @@ def update_status_inv(user, data):
 
 
 def _build_invoice_information_head_detail(user, data):
+    pr_logo = True
     invoice = models.ModelsInvoice.objects.get(
         id=data['invoice_id']
     )
     crew = invoice.crew_id
-    account = ModelsAccount.objects.get(id=crew.account_id.id)
-    url = account.logo.url.replace('/media/', '')
-    #
-    image_path = os.path.join(settings.MEDIA_ROOT, url)
-    with default_storage.open(image_path, 'rb') as f:
-        img = IM.open(f)
-        width, height = img.size
-    max_size = (128, 128)
-    if width > height:
-        height = int((max_size[0] / width) * height)
-        width = max_size[0]
-    else:
-        width = int((max_size[1] / height) * width)
-        height = max_size[1]
+    account = ModelsAccount.objects.get(id=int(data["account_id"]))
 
-    image: LayoutElement = Image(
-        Path(image_path),
-        width=Decimal(width),
-        height=Decimal(height),
-        vertical_alignment=Alignment.MIDDLE
-    )
+    #
+    if account.logo:
+        url = account.logo.url.replace('/media/', '')
+        image_path = os.path.join(settings.MEDIA_ROOT, url)
+        with default_storage.open(image_path, 'rb') as f:
+            img = IM.open(f)
+            width, height = img.size
+        max_size = (128, 128)
+        if width > height:
+            height = int((max_size[0] / width) * height)
+            width = max_size[0]
+        else:
+            width = int((max_size[1] / height) * width)
+            height = max_size[1]
+
+        image: LayoutElement = Image(
+            Path(image_path),
+            width=Decimal(width),
+            height=Decimal(height),
+            vertical_alignment=Alignment.MIDDLE
+        )
+    else:
+        pr_logo = False
     table_001 = FixedColumnWidthTable(number_of_columns=3, number_of_rows=4)
     table_001.add(Paragraph(" "))
     table_001.add(
         Paragraph("Invoice", font="Helvetica-Bold", font_size=11, horizontal_alignment=Alignment.CENTERED)
     )
-    table_001.add(TableCell(image, row_span=4))
+    if pr_logo:
+        table_001.add(TableCell(image, row_span=4))
+    else:
+        table_001.add(Paragraph(" "))
 
     table_001.add(
         Paragraph(f"{account.name}", font="Helvetica-Bold", font_size=12)
     )
     table_001.add(Paragraph(" "))
+    if pr_logo==False:
+        table_001.add(Paragraph(" "))
     table_001.add(
         Paragraph(
             f"""
@@ -522,47 +546,59 @@ def _build_invoice_information_head_detail(user, data):
     table_001.add(Paragraph(" "))
     table_001.add(Paragraph(" "))
     table_001.add(Paragraph(" "))
+    if pr_logo==False:
+        table_001.add(Paragraph(" "))
+        table_001.add(Paragraph(" "))
 
     table_001.no_borders()
     return table_001
 
 
 def _build_invoice_information_head(user, data):
+    pr_logo = True
     invoice = data.first()
-
     crew = invoice.crew_id
-    account = ModelsAccount.objects.get(id=crew.account_id.id)
-    url = account.logo.url.replace('/media/', '')
+    account_id = invoice.account.id
+    account = ModelsAccount.objects.get(id=account_id)
+    if account.logo:
+        url = account.logo.url.replace('/media/', '')
 
-    image_path = os.path.join(settings.MEDIA_ROOT, url)
+        image_path = os.path.join(settings.MEDIA_ROOT, url)
 
-    with default_storage.open(image_path, 'rb') as f:
-        img = IM.open(f)
-        width, height = img.size
-    max_size = (128, 128)
-    if width > height:
-        height = int((max_size[0] / width) * height)
-        width = max_size[0]
+        with default_storage.open(image_path, 'rb') as f:
+            img = IM.open(f)
+            width, height = img.size
+        max_size = (128, 128)
+        if width > height:
+            height = int((max_size[0] / width) * height)
+            width = max_size[0]
+        else:
+            width = int((max_size[1] / height) * width)
+            height = max_size[1]
+        image: LayoutElement = Image(
+            Path(image_path),
+            width=Decimal(width),
+            height=Decimal(height),
+            vertical_alignment=Alignment.MIDDLE
+        )
     else:
-        width = int((max_size[1] / height) * width)
-        height = max_size[1]
-    image: LayoutElement = Image(
-        Path(image_path),
-        width=Decimal(width),
-        height=Decimal(height),
-        vertical_alignment=Alignment.MIDDLE
-    )
+        pr_logo = False
     table_001 = FixedColumnWidthTable(number_of_columns=3, number_of_rows=4)
     table_001.add(Paragraph(" "))
     table_001.add(
         Paragraph("Invoice Statement", font="Helvetica-Bold", font_size=11, horizontal_alignment=Alignment.CENTERED)
     )
-    table_001.add(TableCell(image, row_span=4))
+    if pr_logo:
+        table_001.add(TableCell(image, row_span=4))
+    else:
+        table_001.add(Paragraph(" "))
 
     table_001.add(
         Paragraph(f"{account.name}", font="Helvetica-Bold", font_size=12)
     )
     table_001.add(Paragraph(" "))
+    if pr_logo==False:
+        table_001.add(Paragraph(" "))
     table_001.add(
         Paragraph(
             f"""
@@ -577,6 +613,9 @@ def _build_invoice_information_head(user, data):
     table_001.add(Paragraph(" "))
     table_001.add(Paragraph(" "))
     table_001.add(Paragraph(" "))
+    if pr_logo==False:
+        table_001.add(Paragraph(" "))
+        table_001.add(Paragraph(" "))
 
     table_001.no_borders()
     return table_001
@@ -624,6 +663,7 @@ def _build_invoice_detail_information(user, data):
     )
     customer = invoice.customer_id
     crew = invoice.crew_id
+    car = models.ModelsCars.objects.get(id=invoice.car_id_id)
     table_001 = FixedColumnWidthTable(number_of_rows=3, number_of_columns=3)
     table_002 = FixedColumnWidthTable(number_of_rows=6, number_of_columns=2)
     table_002.add(Paragraph("Invoice Number:", font="Helvetica-Bold", font_size=9,
@@ -632,7 +672,7 @@ def _build_invoice_detail_information(user, data):
                             horizontal_alignment=Alignment.RIGHT, ))
     table_002.add(Paragraph("PO Number:", font="Helvetica-Bold", font_size=9,
                             horizontal_alignment=Alignment.RIGHT, ))
-    table_002.add(Paragraph(f"{invoice.po}", font="Helvetica-Bold", font_size=9,
+    table_002.add(Paragraph(f"{car.po}", font="Helvetica-Bold", font_size=9,
                             horizontal_alignment=Alignment.RIGHT, ))
     table_002.add(Paragraph(" "))
     table_002.add(Paragraph(" "))
@@ -698,27 +738,28 @@ def _build_itemized_description_table(tax, invoices):
                 Paragraph(h, font="Helvetica-Bold", font_size=8)
             )
         )
+    try:
+        for row_number, item in enumerate(invoices):
+            print(item.number, item.start_at)
+            table_001.add(TableCell(Paragraph(item.number, font="Helvetica-Bold", font_size=8
+                                              )))
+            table_001.add(TableCell(Paragraph(str(item.start_at.strftime('%d/%m/%y')), font="Helvetica", font_size=8)))
+            table_001.add(TableCell(Paragraph(str(item.finished_at.strftime('%d/%m/%y')), font="Helvetica", font_size=8)))
+            table_001.add(
+                TableCell(Paragraph(" " + str(item.status), font="Helvetica", font_size=8))
+            )
+            table_001.add(
+                TableCell(Paragraph("$ " + str(item.total_sum), font="Helvetica", font_size=8))
+            )
+            table_001.add(
+                TableCell(Paragraph("$ 0", font="Helvetica", font_size=8))
+            )
+            table_001.add(
+                TableCell(Paragraph("$ " + str(item.total_sum), font="Helvetica", font_size=8))
+            )
+    except BaseException as ex:
+        print(f'Invoice table list error: {ex}')
 
-    for row_number, item in enumerate(invoices):
-        table_001.add(TableCell(Paragraph(item.number, font="Helvetica-Bold", font_size=8
-
-                                          )))
-        table_001.add(TableCell(Paragraph(str(item.start_at.strftime('%d/%m/%y')), font="Helvetica", font_size=8)))
-        table_001.add(TableCell(Paragraph(str(item.finished_at.strftime('%d/%m/%y')), font="Helvetica", font_size=8)))
-        table_001.add(
-            TableCell(Paragraph(" " + str(item.status), font="Helvetica", font_size=8))
-        )
-        table_001.add(
-            TableCell(Paragraph("$ " + str(item.total_sum), font="Helvetica", font_size=8))
-        )
-        table_001.add(
-            TableCell(Paragraph("$ 0", font="Helvetica", font_size=8))
-        )
-        table_001.add(
-            TableCell(Paragraph("$ " + str(item.total_sum), font="Helvetica", font_size=8))
-        )
-
-    # for row_number in range(2):
     for _ in range(0, 7):
         table_001.add(TableCell(Paragraph(" ", border_top=True)))
 
@@ -811,7 +852,6 @@ def _build_itemized_description_table(tax, invoices):
             ),
             col_span=7, )
     )
-
     table_001.set_padding_on_all_cells(Decimal(2), Decimal(2), Decimal(2), Decimal(2))
     table_001.no_borders()
     return table_001
@@ -890,7 +930,7 @@ def _build_itemized_detail_description_table(user, data):
                             horizontal_alignment=Alignment.LEFT, ))
     table_002.add(Paragraph("PO Number:", font="Helvetica-Bold", font_size=9,
                             horizontal_alignment=Alignment.LEFT, ))
-    table_002.add(Paragraph(f"{invoice.po}", font="Helvetica-Bold", font_size=9,
+    table_002.add(Paragraph(f"{car.po}", font="Helvetica-Bold", font_size=9,
                             horizontal_alignment=Alignment.LEFT, ))
 
     table_002.no_borders()
@@ -913,7 +953,6 @@ def _build_itemized_detail_description_table(user, data):
 
     table_004 = FixedColumnWidthTable(number_of_rows=3, number_of_columns=3)
     if tax:
-
         hst: float = (invoice.total_sum * 13) / 100
         table_004.add(Paragraph("Sub Total:", font="Helvetica-Bold", font_size=8,
                                 horizontal_alignment=Alignment.RIGHT, ))
@@ -996,7 +1035,7 @@ def generate_pdf_for_detailed_invoice(user, data):
     filename = f'Invoice_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
     if data['send']:
         customer = invoice.customer_id
-        send_email_with_pdf_attachment(si, user, customer, filename, 'Invoice')
+        send_email_with_pdf_attachment(si, user, customer, filename, 'Invoice', data)
         return Response({'message': 'Email sent successfully'})
     else:
         response = HttpResponse(si.read(), content_type=('application/pdf'))
@@ -1014,8 +1053,8 @@ def generate_pdf_list_invoice(user, data):
         end_date = datetime.strptime(data['end_date'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz)
         tax = data['tax']
         invoices = models.ModelsInvoice.objects.filter(
-            crew_id__account_id=user.account_id,
-            customer_id_id=data['customer_id'],
+            account=ModelsAccount.objects.get(id=int(data["account_id"])),
+            customer_id_id=int(data['customer_id']),
             start_at__range=(start_date, end_date),
             status='final'
         )
@@ -1048,9 +1087,12 @@ def generate_pdf_list_invoice(user, data):
     page_layout.add(Paragraph(" "))
 
     # Itemized description
-    page_layout.add(
-        _build_itemized_description_table(tax, invoices)
-    )
+    try:
+        page_layout.add(
+            _build_itemized_description_table(tax, invoices)
+        )
+    except BaseException as ex:
+        print(f'Build table invoice list description: {ex}')
     PDF.dumps(si, pdf)
     si.seek(0)
 
@@ -1058,7 +1100,7 @@ def generate_pdf_list_invoice(user, data):
 
     if data['send']:
         customer = invoices.first().customer_id
-        send_email_with_pdf_attachment(si, user, customer, filename, 'Invoice Statement')
+        send_email_with_pdf_attachment(si, user, customer, filename, 'Invoice Statement', data)
         return Response({'message': 'Email sent successfully'})
     else:
         response = HttpResponse(si.read(), content_type=('application/pdf'))
@@ -1072,7 +1114,6 @@ def generate_pdf_list_invoice(user, data):
 @check_auth('admin')
 def export_invoices_csv(user, data):
     invoices = query_invoice(user, data)
-    print(invoices)
     filename = f'Invoices_{datetime.now().strftime("%H-%M_%d-%m-%y")}'
     output = io.StringIO()
     format_file = 'csv'

@@ -46,7 +46,7 @@ def create_car(user, data):
         else:
             serializer = serializers.SerializerCar(data=data)
             if serializer.is_valid():
-                serializer.save(account=user.account_id)
+                serializer.save(account_id=data["account"])
                 data = serializer.data
                 data['id'] = serializer.instance.id
                 return Response({

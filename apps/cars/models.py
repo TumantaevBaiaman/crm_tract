@@ -11,6 +11,7 @@ class ModelsCars(models.Model):
     profile = models.ForeignKey(ModelsUser, on_delete=models.CASCADE)
     description = models.TextField()
     stock = models.CharField(max_length=55)
+    po = models.CharField(max_length=255, null=True)
     vin = models.CharField(max_length=55)
     model = models.CharField(max_length=255)
     make = models.CharField(max_length=255)

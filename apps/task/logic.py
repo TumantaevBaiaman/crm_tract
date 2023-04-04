@@ -118,10 +118,12 @@ def update_tasks(user, data):
         if 'invoice_id' in list(data.keys()):
             invoice = ModelsInvoice.objects.get(id=data['invoice_id'])
         else:
+            print(data)
             invoice = ModelsInvoice.objects.create(
                 crew_id=user,
                 car_id=car,
                 customer_id=car.customer,
+                account_id=data["account"],
             )
         if tasks_new:
             invoice.tasks.add(*tasks_new)

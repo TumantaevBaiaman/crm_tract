@@ -33,7 +33,7 @@ def create_customer(user, data):
         if serializer.is_valid():
             customer = models.ModelsCustomer.objects.create(
                 user_id=user.id,
-                account=user.account_id,
+                account_id=data["account"],
                 email=list_emails,
                 full_name=data['full_name'],
                 street1=data['street1'],
@@ -64,10 +64,8 @@ def get_customers(user, data):
         customer = models.ModelsCustomer.objects.get(
             id=data["id"], deleted=False
         )
-        print(customer)
         cars = ModelsCars.objects.filter(customer=customer, deleted=False)
         invoices = ModelsInvoice.objects.filter(customer_id=customer)
-        print(invoices)
         return Response({
             'success': True,
             'customer': serializers.SerializerCustomer(customer).data,
@@ -76,8 +74,7 @@ def get_customers(user, data):
         }, status=status.HTTP_200_OK)
 
     else:
-        customers = models.ModelsCustomer.objects.filter(account=user.account_id, deleted=False)
-        print(customers)
+        customers = models.ModelsCustomer.objects.filter(account_id=data["account_id"], deleted=False)
         return Response({
             'success': True,
             'customers': serializers.SerializerCustomer(customers, many=True).data,
