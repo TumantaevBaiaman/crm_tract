@@ -17,13 +17,9 @@ class ModelsSatus(models.Model):
 
 
 class ModelsUser(AbstractBaseUser, PermissionsMixin):
-    black_account_id = models.ForeignKey(
+    account_id = models.ForeignKey(
         ModelsAccount, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='profile_1'
-    )
-    white_account_id = models.ForeignKey(
-        ModelsAccount, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='profile_2'
+        null=True, blank=True, related_name='profile'
     )
     email = models.EmailField(
         verbose_name="email address",

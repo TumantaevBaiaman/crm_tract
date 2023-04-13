@@ -23,7 +23,7 @@ class ModelsAccount(models.Model):
     email = models.CharField(max_length=255, null=False)
     hst = models.CharField(max_length=255, null=False)
     logo = models.ImageField(blank=True, null=True, upload_to='account')
-    status = models.ForeignKey(ModelsSatusAccount, on_delete=models.CASCADE, blank=True, null=True)
+    status = models.ForeignKey(ModelsSatusAccount, on_delete=models.SET_NULL, blank=True, null=True)
     create_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

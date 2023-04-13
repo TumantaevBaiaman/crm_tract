@@ -255,7 +255,7 @@ def get_crew_report(user, data):
     if str(user.status) == 'admin':
         all_crews = [invoice.crew_id for invoice in invoices]
         all_crews = set(all_crews)
-        crews = [crew for crew in all_crews if crew.white_account_id == account] if int(data["account_status"]) == 1 else [crew for crew in all_crews if crew.black_account_id == account]
+        crews = [crew for crew in all_crews if crew.account_id == account] if int(data["account_status"]) == 1 else [crew for crew in all_crews if crew.account_id == account]
         gross = 0
         total_invoice_sum = 0
         if len(crews) >= 1:

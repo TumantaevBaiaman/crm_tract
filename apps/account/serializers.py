@@ -10,7 +10,7 @@ class ModelsStatusSerializer(serializers.ModelSerializer):
 
 
 class SerializerAccount(serializers.ModelSerializer):
-    status = ModelsStatusSerializer(required=False)
+    status = ModelsStatusSerializer(read_only=True)
 
     class Meta:
         model = models.ModelsAccount

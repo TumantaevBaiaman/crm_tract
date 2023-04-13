@@ -8,7 +8,7 @@ import string
 from apps.account.serializers import SerializerAccount
 from apps.customer.models import ModelsCustomer
 from apps.users.models import ModelsUser, ModelsSatus
-from apps.account.models import ModelsAccount
+from apps.account.models import ModelsAccount, ModelsSatusAccount
 from apps.users.serializers import SignUpSerializer, serialize_errors, SerializerUser, SerializerSatus
 from django.conf import settings
 from django.core.mail import send_mail
@@ -157,14 +157,13 @@ def create_profile(user, data):
             pass
         try:
             user = ModelsUser.objects.get(id=user.id)
-            white_account = ModelsAccount.objects.get(id=user.white_account_id_id)
-            black_account = ModelsAccount.objects.get(id=user.black_account_id_id)
+            account = ModelsAccount.objects.get(id=user.account_id_id)
             status_name = ModelsSatus.objects.get(id=user.status_id).name
         except:
             return Response({
                 'success': False,
             }, status=status.HTTP_400_BAD_REQUEST)
-        if status_name != 'admin' and white_account:
+        if status_name != 'admin' and account:
             return Response({
                 'success': False,
             }, status=status.HTTP_403_FORBIDDEN)
@@ -190,8 +189,7 @@ def create_profile(user, data):
                     'success': False,
                     'errors': serialize_errors(serializer.errors)
                 }, status=status.HTTP_400_BAD_REQUEST)
-        user.white_account_id = white_account
-        user.black_account_id = black_account
+        user.account_id = account
         user.lastname = data['lastname'] if data['lastname'] else None
         user.username = data['username'] if data['username'] else None
         user.status = ModelsSatus.objects.get(name=user_status)
@@ -264,7 +262,7 @@ def new_reg_user(user, data):
 def register_accounts(user, data):
 
     if data['id'] == 1:
-        data['name'] = 'black-' + data['name']
+        data['name'] = data['name']
         data['logo'] = None
 
     serializer = SerializerAccount(data=data)
@@ -272,10 +270,7 @@ def register_accounts(user, data):
         serializer.save()
         account = serializer.instance
         status_name = ModelsSatus.objects.get(name='admin')
-        if data['id'] == 0:
-            user.white_account_id = account
-        else:
-            user.black_account_id = account
+        user.account_id = account
         user.status_id = status_name
         user.save()
         return account
@@ -304,24 +299,19 @@ def create_account(user, data):
             'errors': ['Account with this name already exists. Try again with new name.']
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    accounts = []
-    for i in range(2):
-        data['id'] = i
-        account = register_accounts(user, data)
-        accounts.append(account)
+    account = register_accounts(user, data)
 
     return Response({
         'success': True,
         'data': {
-            'accounts': SerializerAccount(accounts, many=True).data,
+            'account': SerializerAccount(account).data,
         }
     }, status=status.HTTP_201_CREATED)
 
 
 @check_auth('admin')
 def get_user_list(user, data):
-    user = ModelsUser.objects.get(id=user.id, is_active=True)
-    users = ModelsUser.objects.filter(white_account_id=int(data["account_id"])) if int(data["account_status"]) == 1 else ModelsUser.objects.filter(black_account_id=int(data["account_id"]))
+    users = ModelsUser.objects.filter(account_id=int(data["account_id"])) if int(data["account_status"]) == 1 else ModelsUser.objects.filter(account_id=int(data["account_id"]))
     return Response({
         'success': True,
         'users': SerializerUser(users, many=True).data,
@@ -345,8 +335,7 @@ def get_profile(user, data):
             'success': True,
             'profile': SerializerUser(user).data,
             'status': SerializerSatus(status_model).data,
-            'account_black': SerializerAccount(user.black_account_id).data,
-            'account_white': SerializerAccount(user.white_account_id).data,
+            'account_white': SerializerAccount(user.account_id).data,
         }, status=status.HTTP_200_OK)
     else:
         return Response({
