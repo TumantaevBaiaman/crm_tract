@@ -48,7 +48,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['backapt.com', '164.90.210.225', 'www.backapt.com', '127.0.0.1']
+ALLOWED_HOSTS = ['asdbackapt.cloud', '164.90.210.225', 'www.asdbackapt.cloud', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ['https://backapt.com', 'https://www.backapt.com']
 
 # CORE SETTINGS
