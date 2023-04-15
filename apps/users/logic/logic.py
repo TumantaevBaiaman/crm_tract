@@ -94,13 +94,12 @@ def send_auth_mail(subject, recipient, password):
 
 def generate_password():
     password_characters = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(random.choice(password_characters) for i in range(8))
+    password = ''.join(random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ') for i in range(8))
     return password
 
 
 @check_auth()
 def create_profile(user, data):
-    print(data)
     step = 0
     try:
         step = int(data['step'])
@@ -261,7 +260,7 @@ def new_reg_user(user, data):
 
 def register_accounts(user, data):
 
-    if data['id'] == 1:
+    if data['status'] == 0:
         data['name'] = data['name']
         data['logo'] = None
 
@@ -293,7 +292,7 @@ def create_account(user, data):
             'success': False,
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    if ModelsAccount.objects.filter(name=data['name']):
+    if len(ModelsAccount.objects.filter(name=data['name']))>2:
         return Response({
             'success': False,
             'errors': ['Account with this name already exists. Try again with new name.']
@@ -335,7 +334,7 @@ def get_profile(user, data):
             'success': True,
             'profile': SerializerUser(user).data,
             'status': SerializerSatus(status_model).data,
-            'account_white': SerializerAccount(user.account_id).data,
+            'account': SerializerAccount(user.account_id).data,
         }, status=status.HTTP_200_OK)
     else:
         return Response({
