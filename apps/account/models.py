@@ -25,6 +25,16 @@ class ModelsAccount(models.Model):
     logo = models.ImageField(blank=True, null=True, upload_to='account')
     status = models.ForeignKey(ModelsSatusAccount, on_delete=models.SET_NULL, blank=True, null=True)
     create_at = models.DateTimeField(auto_now_add=True)
+    last_invoice_month = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.id}: {self.name}"
+
+
+class Transaction(models.Model):
+    account = models.ForeignKey(ModelsAccount, on_delete=models.CASCADE)
+    date = models.DateField(auto_now_add=True)
+    paid = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.account.name} - {self.date}"

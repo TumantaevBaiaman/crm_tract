@@ -76,6 +76,8 @@ INSTALLED_APPS = [
     'apps.customer.apps.CustomerConfig',
 
     # install
+    'django_crontab',
+    'celery',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -143,6 +145,7 @@ DATABASES = {
 REDIS_HOST = config('REDIS_HOST', default='localhost')
 REDIS_PORT = config('REDIS_PORT', default=6379)
 REDIS_DB = config('REDIS_DB', default=0)
+CRONJOBS = [('0 9 * * *', 'crm_tract.tasks.send_monthly_invoice')]
 
 
 # Password validation
@@ -183,6 +186,13 @@ EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'aptcrm.service@gmail.com'
 EMAIL_HOST_PASSWORD = 'byhillndtgftteul'
+
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
 
 
 # Static files (CSS, JavaScript, Images)
