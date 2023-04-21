@@ -2,6 +2,8 @@ import datetime
 import os
 from pathlib import Path
 from decouple import config
+from celery.schedules import crontab
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,7 +17,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://159.89.119.142:3000",
     "https://devapttract.com"
 ]
-
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',
@@ -76,8 +77,8 @@ INSTALLED_APPS = [
     'apps.customer.apps.CustomerConfig',
 
     # install
-    'django_crontab',
     'celery',
+    'django_celery_beat',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -145,7 +146,6 @@ DATABASES = {
 REDIS_HOST = config('REDIS_HOST', default='localhost')
 REDIS_PORT = config('REDIS_PORT', default=6379)
 REDIS_DB = config('REDIS_DB', default=0)
-CRONJOBS = [('0 9 * * *', 'crm_tract.tasks.send_monthly_invoice')]
 
 
 # Password validation
@@ -188,12 +188,6 @@ EMAIL_HOST_USER = 'aptcrm.service@gmail.com'
 EMAIL_HOST_PASSWORD = 'byhillndtgftteul'
 
 
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TASK_SERIALIZER = 'json'
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
@@ -234,3 +228,13 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
+CELERY_BROKER_URL = 'redis://redis:6379'
+CELERY_RESULT_BACKEND = 'redis://redis:6379'
+
+# CELERY_BEAT_SCHEDULE = {
+#     "sample_task": {
+#         "task": "apps.account.tasks.sample_task",
+#         "schedule": crontab(minute="*/1"),
+#     },
+# }

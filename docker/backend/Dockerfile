@@ -9,4 +9,6 @@ RUN pip install psycopg2-binary
 ADD ./docker /app/docker
 ADD ./ /app/backend
 RUN ["chmod", "+x", "/app/docker/backend/wsgi-entrypoint.sh"]
+RUN ["chmod", "+x", "/app/docker/backend/worker-entrypoint.sh"]
+RUN ["chmod", "+x", "/app/docker/backend/beat-entrypoint.sh"]
 EXPOSE 8000

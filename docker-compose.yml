@@ -10,6 +10,12 @@ services:
     env_file:
       - ./.env
 
+  redis:
+    image: redis:latest
+    expose:
+      - 6379
+    networks:
+      - my-network
 
   backend:
     restart: unless-stopped
@@ -26,30 +32,38 @@ services:
       - my-network
     depends_on:
       - db
-      - redis
     env_file:
       - ./.env
 
-  celery:
-    build: .
-    command: celery -A crm_tract worker --loglevel=info
-    volumes:
-      - .:/code
+  worker:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+    entrypoint: /app/docker/backend/worker-entrypoint.sh
+    networks:
+      - my-network
     depends_on:
-      - db
       - redis
+      - backend
+      - db
+    env_file:
+      - ./.env
 
-  scheduler:
-    build: .
-    command: python manage.py crontab add && tail -f /dev/null
-    volumes:
-      - .:/code
+  beat:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+    entrypoint: /app/docker/backend/beat-entrypoint.sh
+    networks:
+      - my-network
     depends_on:
-      - db
       - redis
-
-  redis:
-    image: redis:latest
+      - backend
+      - db
+    env_file:
+      - ./.env
 
   nginx:
     restart: unless-stopped
@@ -70,19 +84,11 @@ services:
     depends_on:
       - backend
       - db
-
-  certbot:
-    image: certbot/certbot
-    restart: unless-stopped
-    volumes:
-      - ./docker/nginx/certbot/conf:/etc/letsencrypt
-      - ./docker/nginx/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-
 volumes:
   media_volume:
   static_volume:
   postgres_data:
+  redis_data:
 
 networks:
   my-network:

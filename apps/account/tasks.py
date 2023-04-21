@@ -1,13 +1,12 @@
-from celery.loaders import app
-from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
-from rest_framework.response import Response
-
 from celery import shared_task
-
+from decouple import config
 from apps.account.models import Transaction, ModelsAccount, ModelsSatusAccount
+from celery.utils.log import get_task_logger
 
+
+logger = get_task_logger(__name__)
 
 @shared_task
 def send_monthly_invoice():
@@ -23,7 +22,7 @@ def send_monthly_invoice():
                 next_invoice_month = last_invoice_month.replace(month=last_invoice_month.month + 1)
                 subject = f"Monthly invoice for {account.name}"
                 message = f"Please pay your monthly invoice for subscription."
-                from_email = settings.EMAIL_HOST_USER
+                from_email = config('DJANGO_SUPERUSER_EMAIL')
                 recipient_list = [account.email]
                 send_mail(subject, message, from_email, recipient_list)
                 transaction = Transaction.objects.create(
@@ -36,4 +35,9 @@ def send_monthly_invoice():
                 account.status = ModelsSatusAccount.objects.get(name='inactive')
                 account.save()
 
-    return Response({'detail': 'Monthly invoices sent'})
+    return {'detail': 'Monthly invoices sent'}
+
+
+@shared_task
+def sample_task():
+    logger.info("The sample task just ran.")
