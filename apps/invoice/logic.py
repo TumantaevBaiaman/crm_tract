@@ -437,9 +437,9 @@ def get_statistics(user, data):
 
             for date in date_range_list:
                 date = datetime.strptime(date, "%Y-%m-%d").date()
-                if str(date) in statistics:
-                    gross = Decimal(statistics[str(date)] * Decimal(13) / 100 + statistics[str(date)])
-                    final_statistics.append({'date': date, 'sum': statistics[str(date)], 'gross': gross})
+                if date in statistics:
+                    gross = Decimal(statistics[date] * Decimal(13) / 100 + statistics[date])
+                    final_statistics.append({'date': date, 'sum': statistics[date], 'gross': gross})
                 else:
                     final_statistics.append({'date': date, 'sum': 0, 'gross': 0})
         final_invoices = invoice_stat.count()
@@ -535,7 +535,7 @@ def _build_invoice_information_head_detail(user, data):
     table_001.add(
         Paragraph(
             f"""
-            {account.street1}
+            {account.eet1}
             {account.street2}
             {account.country}
             {account.phone}

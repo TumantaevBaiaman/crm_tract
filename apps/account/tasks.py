@@ -29,6 +29,7 @@ def send_monthly_invoice():
                     account=account,
                     paid=False,
                 )
+                transaction.save()
                 account.last_invoice_month = next_invoice_month
                 account.save()
             elif delta.days >= 33:
