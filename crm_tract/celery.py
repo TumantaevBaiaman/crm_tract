@@ -12,8 +12,7 @@ app.conf.beat_schedule = {
     "sample_task": {
         # "task": "apps.account.tasks.sample_task",
         "task": "apps.account.tasks.send_monthly_invoice",
-        # "schedule": crontab(minute="*/5"),
-        'schedule': time(hour=9, minute=0),
+        "schedule": crontab(hour=9, minute=0),
     },
 }
 app.autodiscover_tasks()

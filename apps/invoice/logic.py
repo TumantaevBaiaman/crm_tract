@@ -535,7 +535,7 @@ def _build_invoice_information_head_detail(user, data):
     table_001.add(
         Paragraph(
             f"""
-            {account.eet1}
+            {account.street1}
             {account.street2}
             {account.country}
             {account.phone}
