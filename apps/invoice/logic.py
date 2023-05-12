@@ -672,8 +672,12 @@ def _build_invoice_detail_information(user, data):
                             horizontal_alignment=Alignment.RIGHT, ))
     table_002.add(Paragraph("PO Number:", font="Helvetica-Bold", font_size=9,
                             horizontal_alignment=Alignment.RIGHT, ))
-    table_002.add(Paragraph(f"{car.po}", font="Helvetica-Bold", font_size=9,
-                            horizontal_alignment=Alignment.RIGHT, ))
+    if car.po!='undefined':
+        table_002.add(Paragraph(f"{car.po}", font="Helvetica-Bold", font_size=9,
+                                horizontal_alignment=Alignment.RIGHT, ))
+    else:
+        table_002.add(Paragraph(f" ", font="Helvetica-Bold", font_size=9,
+                                horizontal_alignment=Alignment.RIGHT, ))
     table_002.add(Paragraph(" "))
     table_002.add(Paragraph(" "))
 
@@ -869,6 +873,10 @@ def _build_itemized_detail_description_table(user, data):
         number_of_rows=7 + len(task_list),
         number_of_columns=3,
     )
+
+    car.model = car.model if car.model != "undefined" else " "
+    car.stock = car.stock if car.stock != "undefined" else " "
+
     table_001.add(
         TableCell(
             Paragraph(
@@ -930,8 +938,12 @@ def _build_itemized_detail_description_table(user, data):
                             horizontal_alignment=Alignment.LEFT, ))
     table_002.add(Paragraph("PO Number:", font="Helvetica-Bold", font_size=9,
                             horizontal_alignment=Alignment.LEFT, ))
-    table_002.add(Paragraph(f"{car.po}", font="Helvetica-Bold", font_size=9,
-                            horizontal_alignment=Alignment.LEFT, ))
+    if car.po!='undefined':
+        table_002.add(Paragraph(f"{car.po}", font="Helvetica-Bold", font_size=9,
+                                horizontal_alignment=Alignment.LEFT, ))
+    else:
+        table_002.add(Paragraph(f"", font="Helvetica-Bold", font_size=9,
+                                horizontal_alignment=Alignment.LEFT, ))
 
     table_002.no_borders()
     table_001.add(table_002)
