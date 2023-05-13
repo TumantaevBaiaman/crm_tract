@@ -87,6 +87,11 @@ def get_invoice(user, data):
     else:
         invoices = models.ModelsInvoice.objects.filter(crew_id=user, account=int(data["account_id"]))
         account = ModelsAccount.objects.get(id=int(data["account_id"]))
+        invoice_data = SerializerInvoice(invoices, many=True).data
+        for invoice in invoice_data:
+            invoice['start_at'] = datetime.strptime(invoice['start_at'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d')
+            if invoice['finished_at']:
+                invoice['finished_at'] = datetime.strptime(invoice['finished_at'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d')
         return Response({
             'success': True,
             'account': SerializerAccount(account).data,
