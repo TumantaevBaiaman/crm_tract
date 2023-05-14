@@ -95,7 +95,7 @@ def get_invoice(user, data):
         return Response({
             'success': True,
             'account': SerializerAccount(account).data,
-            'invoice': SerializerInvoice(invoices, many=True).data,
+            'invoice': invoice_data,
         }, status=status.HTTP_200_OK)
 
 
