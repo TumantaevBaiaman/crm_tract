@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from rest_framework import status
 from rest_framework.response import Response
 import re
@@ -66,11 +68,17 @@ def get_customers(user, data):
         )
         cars = ModelsCars.objects.filter(customer=customer, deleted=False)
         invoices = ModelsInvoice.objects.filter(customer_id=customer)
+        invoice_data = SerializerInvoice(invoices, many=True).data
+        for invoice in invoice_data:
+            invoice['start_at'] = datetime.strptime(invoice['start_at'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d')
+            if invoice['finished_at']:
+                invoice['finished_at'] = datetime.strptime(invoice['finished_at'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime(
+                    '%Y-%m-%d')
         return Response({
             'success': True,
             'customer': serializers.SerializerCustomer(customer).data,
             'cars': SerializerCar(cars, many=True).data,
-            'invoices': SerializerInvoice(invoices, many=True).data,
+            'invoices': invoice_data,
         }, status=status.HTTP_200_OK)
 
     else:
