@@ -24,11 +24,11 @@ class CustomUserChangeForm(UserChangeForm):
 
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('email', 'username', 'lastname', 'is_admin', 'is_staff', 'is_active')
+    list_display = ('email', 'username', 'lastname', 'account_id', 'is_admin', 'is_staff', 'is_active')
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Personal Info", {"fields": ("username", "lastname", "date_of_birth", "phone")}),
+        ("Personal Info", {"fields": ("username", "lastname", "date_of_birth", "phone", "account_id")}),
         ("Permissions", {"fields": ("is_admin", "is_staff", "is_active", "status")}),
     )
 

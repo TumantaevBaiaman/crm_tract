@@ -46,8 +46,19 @@ class LoginView(TokenObtainPairView):
         if 'email' in request.data.keys():
             users = ModelsUser.objects.filter(email=request.data['email'], is_active=True)
             if len(users) == 1:
-                data = super(LoginView, self).post(request, *args, **kwargs)
-                return data
+                if users[0].account_id:
+                    if users[0].account_id.logo and request.data["account_status"]=="1":
+                        data = super(LoginView, self).post(request, *args, **kwargs)
+                        return data
+                    elif not users[0].account_id.logo and request.data["account_status"]=="0":
+                        data = super(LoginView, self).post(request, *args, **kwargs)
+                        return data
+                else:
+                    data = super(LoginView, self).post(request, *args, **kwargs)
+                    return data
+            # if len(users) == 1:
+            #     data = super(LoginView, self).post(request, *args, **kwargs)
+            #     return data
         return Response({
             'detail': "No active account found with the given credentials",
         }, status=status.HTTP_401_UNAUTHORIZED)
