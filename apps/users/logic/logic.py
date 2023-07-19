@@ -44,6 +44,8 @@ def extract_request_data(request):
         data = {k: v for k, v in request.data.items()}
     elif request.query_params:
         data = {k: v for k, v in request.query_params.items()}
+    if ("account_status" in data.keys() and str(data["account_status"]) == "0") and ("email" in data.keys() and data["email"]) and "status" not in data.keys():
+        data["email"] = "BlackAccount"+data["email"]
     data['meta'] = request.META.copy()
     return data
 
@@ -85,10 +87,21 @@ def check_auth(access_status=None):
     return real_decorator
 
 
-def send_auth_mail(subject, recipient, password):
+def send_decorator(func):
+    def wrapper(subject, recipient, password, account_status):
+        if str(account_status) == "0":
+            email = recipient.email.replace("BlackAccount", "")
+        else:
+            email = recipient.email
+        result = func(subject, email, password)
+        return result
+    return wrapper
+
+
+@send_decorator
+def send_auth_mail(subject, email, password):
     host = settings.EMAIL_HOST_USER
-    email = recipient.email
-    message = f'username: {recipient.email}\npassword: {password}'
+    message = f'username: {email}\npassword: {password}'
     send_mail(subject, message, host, [email])
 
 
@@ -142,7 +155,8 @@ def create_profile(user, data):
         user.date_of_birth = data['date_of_birth'] if data['date_of_birth'] else None
         user.is_active = True
         user.save()
-        send_auth_mail('signup', user, password)
+        account_status = data["account_status"]
+        send_auth_mail('signup', user, password, account_status)
         return Response({
             'success': True,
             'data': {
@@ -196,7 +210,8 @@ def create_profile(user, data):
         user.date_of_birth = data['date_of_birth'] if data['date_of_birth'] else None
         user.is_active = True
         user.save()
-        send_auth_mail('signup', user, password)
+        account_status = data["account_status"]
+        send_auth_mail('signup', user, password, account_status)
         return Response({
             'success': True,
             'data': {
@@ -249,7 +264,8 @@ def new_reg_user(user, data):
         user.date_of_birth = data['date_of_birth'] if data['date_of_birth'] else None
         user.is_active = True
         user.save()
-        send_auth_mail('signup', user, password)
+        account_status = data["account_status"]
+        send_auth_mail('signup', user, password, account_status)
         return Response({
             'success': True,
             'data': {
