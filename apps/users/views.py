@@ -44,6 +44,8 @@ class LoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         if 'email' in request.data.keys():
+            if request.data["account_status"] == "0":
+                request.data["email"] = "BlackAccount"+request.data["email"]
             users = ModelsUser.objects.filter(email=request.data['email'], is_active=True)
             if len(users) == 1:
                 if users[0].account_id:
