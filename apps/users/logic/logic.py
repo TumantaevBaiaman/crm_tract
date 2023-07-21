@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 import random
 import string
+from django.core import mail
 
 from apps.account.serializers import SerializerAccount
 from apps.customer.models import ModelsCustomer
@@ -18,22 +19,43 @@ def send_email_with_pdf_attachment(file, user, customer, filename, subject, data
     customer_emails = customer.email
     text = re.sub(r'\s+', '', customer_emails.strip())
     send_to = text.split(",")
-    from_to = ModelsAccount.objects.get(id=int(data["account_id"])).email
+    account = ModelsAccount.objects.get(id=int(data["account_id"]))
+    from_to = account.email
     text = f"""
 Dear {customer.full_name},
 Here's your {subject}, We appreciate your prompt payment Thanks tor your business,
 To view and print the attached invoice, double-click on the invoice icon, and then choose File, Print when the invoice displayed. To save the invoice, copy it from this e-mail to another folder on your computer.
-If you have any questions regarding this invoice, please contact Accountng at {ModelsAccount.objects.get(id=int(data["account_id"])).phone} or by email: {from_to} 
+If you have any questions regarding this invoice, please contact Accountng at {account.phone} or by email: {from_to} 
 Note: You require Adobe Acrobat Reader to view this attachment. Adobe Acrobat Reader is available from http://www.adobe.com.
 Regards, 
-Accounting Department, {ModelsAccount.objects.get(id=int(data["account_id"])).name}
+Accounting Department, {account.name}
     """
-    email = EmailMessage(
-        subject,
-        text,
-        from_to,
-        send_to
-    )
+    if not account.logo:
+        account_email = settings.GMAIL_ACCOUNTS[0]
+        email = EmailMessage(
+            subject,
+            text,
+            account_email['EMAIL_HOST_USER'],
+            send_to,
+            connection=mail.get_connection(
+                username=account_email['EMAIL_HOST_USER'],
+                password=account_email["EMAIL_HOST_PASSWORD"],
+                fail_silently=False
+            )
+        )
+    else:
+        account_email = settings.GMAIL_ACCOUNTS[1]
+        email = EmailMessage(
+            subject,
+            text,
+            account_email['EMAIL_HOST_USER'],
+            send_to,
+            connection=mail.get_connection(
+                username=account_email['EMAIL_HOST_USER'],
+                password=account_email["EMAIL_HOST_PASSWORD"],
+                fail_silently=False
+            )
+        )
     email.attach(filename, file.getvalue(), 'application/pdf')
     email.send()
 
@@ -90,19 +112,25 @@ def check_auth(access_status=None):
 def send_decorator(func):
     def wrapper(subject, recipient, password, account_status):
         if str(account_status) == "0":
+            account = settings.GMAIL_ACCOUNTS[0]
+            host = account['EMAIL_HOST_USER']
+            password_email = account["EMAIL_HOST_PASSWORD"]
             email = recipient.email.replace("BlackAccount", "")
         else:
+            account = settings.GMAIL_ACCOUNTS[1]
+            host = account['EMAIL_HOST_USER']
+            password_email = account["EMAIL_HOST_PASSWORD"]
             email = recipient.email
-        result = func(subject, email, password)
+        result = func(subject, email, password, host, password_email)
         return result
     return wrapper
 
 
 @send_decorator
-def send_auth_mail(subject, email, password):
-    host = settings.EMAIL_HOST_USER
+def send_auth_mail(subject, email, password, host, password_email):
+    # host = settings.EMAIL_HOST_USER
     message = f'username: {email}\npassword: {password}'
-    send_mail(subject, message, host, [email])
+    send_mail(subject, message, host, [email], auth_user=host, auth_password=password_email)
 
 
 def generate_password():
