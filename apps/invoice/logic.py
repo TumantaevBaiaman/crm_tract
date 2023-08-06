@@ -515,9 +515,11 @@ def _build_invoice_information_head_detail(user, data):
 
         image: LayoutElement = Image(
             Path(image_path),
-            width=Decimal(width),
+            width=Decimal(width+10),
             height=Decimal(height),
-            vertical_alignment=Alignment.MIDDLE
+            horizontal_alignment=Alignment.RIGHT,
+            # vertical_alignment=Alignment.MIDDLE,
+            padding_top=Decimal(13)
         )
     else:
         pr_logo = False
@@ -532,7 +534,7 @@ def _build_invoice_information_head_detail(user, data):
         table_001.add(Paragraph(" "))
 
     table_001.add(
-        Paragraph(f"{account.name}", font="Helvetica-Bold", font_size=12)
+        Paragraph(f"{account.name}", font="Helvetica-Bold", font_size=14)
     )
     table_001.add(Paragraph(" "))
     if pr_logo==False:
@@ -540,8 +542,8 @@ def _build_invoice_information_head_detail(user, data):
     table_001.add(
         Paragraph(
             f"""
-            {account.street1}
             {account.street2}
+            {account.street1}
             {account.country}
             {account.phone}
             {account.email}
@@ -582,9 +584,11 @@ def _build_invoice_information_head(user, data):
             height = max_size[1]
         image: LayoutElement = Image(
             Path(image_path),
-            width=Decimal(width),
+            width=Decimal(width + 10),
             height=Decimal(height),
-            vertical_alignment=Alignment.MIDDLE
+            horizontal_alignment=Alignment.RIGHT,
+            # vertical_alignment=Alignment.MIDDLE,
+            padding_top=Decimal(13)
         )
     else:
         pr_logo = False
