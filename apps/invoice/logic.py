@@ -795,7 +795,7 @@ def _build_itemized_description_table(tax, invoices):
         )
         table_001.add(
             TableCell(Paragraph(f"$ {subtotal}", font_size=8,
-                                padding_top=5, horizontal_alignment=Alignment.LEFT))
+                                padding_top=5, horizontal_alignment=Alignment.RIGHT))
         )
 
         table_001.add(
@@ -812,7 +812,7 @@ def _build_itemized_description_table(tax, invoices):
         )
         table_001.add(
             TableCell(Paragraph(f"$ {hst}", font_size=8,
-                                padding_top=5, horizontal_alignment=Alignment.LEFT))
+                                padding_top=5, horizontal_alignment=Alignment.RIGHT))
         )
 
         table_001.add(
@@ -829,7 +829,7 @@ def _build_itemized_description_table(tax, invoices):
         )
         table_001.add(
             TableCell(Paragraph(f"$ {hst + subtotal}", font_size=8,
-                                padding_top=5, horizontal_alignment=Alignment.LEFT))
+                                padding_top=5, horizontal_alignment=Alignment.RIGHT))
         )
     else:
         table_001.add(
@@ -979,23 +979,23 @@ def _build_itemized_detail_description_table(user, data):
                                 horizontal_alignment=Alignment.RIGHT, ))
         table_004.add(Paragraph(" "))
         table_004.add(Paragraph(f"${invoice.total_sum}", font="Helvetica", font_size=8,
-                                horizontal_alignment=Alignment.LEFT, ))
+                                horizontal_alignment=Alignment.RIGHT, ))
         table_004.add(Paragraph("HST:", font="Helvetica-Bold", font_size=8,
                                 horizontal_alignment=Alignment.RIGHT, ))
         table_004.add(Paragraph(" "))
         table_004.add(Paragraph(f"${hst}", font="Helvetica", font_size=8,
-                                horizontal_alignment=Alignment.LEFT, ))
+                                horizontal_alignment=Alignment.RIGHT, ))
         table_004.add(Paragraph("Total:", font="Helvetica-Bold", font_size=8,
                                 horizontal_alignment=Alignment.RIGHT, ))
         table_004.add(Paragraph(" "))
         table_004.add(Paragraph(f"${invoice.total_sum + hst}", font="Helvetica-Bold", font_size=8,
-                                horizontal_alignment=Alignment.LEFT, ))
+                                horizontal_alignment=Alignment.RIGHT, ))
     else:
         table_004.add(Paragraph("Total:", font="Helvetica-Bold", font_size=8,
                                 horizontal_alignment=Alignment.RIGHT, ))
         table_004.add(Paragraph(" "))
         table_004.add(Paragraph(f"${invoice.total_sum}", font="Helvetica", font_size=8,
-                                horizontal_alignment=Alignment.LEFT, ))
+                                horizontal_alignment=Alignment.RIGHT, ))
 
         table_004.add(Paragraph(" "))
         table_004.add(Paragraph(" "))
